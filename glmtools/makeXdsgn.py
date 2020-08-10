@@ -58,22 +58,21 @@ class RegressorContinuous(Regressor):
 		# Xdsgn = np.fliplr(toeplitz(padded_stim[range(self.bins_before, n1 + 1)],
 		#		padded_stim[range(self.bins_before - 1, -1, -1)]))
 
-		#paddedstim2 = np.concatenate((np.zeros(self.bins_before - 1), stim[range(0, n_bins - self.bins_before + 1)]))
-		#Xdsgn2 = hankel(paddedstim2, stim[range(n_bins - self.bins_before, n_bins)])
+		paddedstim2 = np.concatenate((np.zeros(self.bins_before - 1), stim))
+		Xdsgn2 = hankel(paddedstim2[:(len(paddedstim2) - self.bins_before + 1)],
+						stim[(len(stim) - self.bins_before):len(stim)])
 
-
-
-		padded_stim = np.concatenate([np.zeros(self.bins_before - 1), stim])
+		# padded_stim = np.concatenate([np.zeros(self.bins_before - 1), stim])
 
 		# Construct a matrix where each row has the d frames of
-		# the stimulus proceeding and including timepoint t
-		T = len(stim)  # Total number of timepoints
-		X = np.zeros((T, self.bins_before))
-		for t in range(T):
-			X[t] = padded_stim[t:t + self.bins_before]
-
-		return X
-		#return Xdsgn2
+		# # the stimulus proceeding and including timepoint t
+		# T = len(stim)  # Total number of timepoints
+		# X = np.zeros((T, self.bins_before))
+		# for t in range(T):
+		# 	X[t] = padded_stim[t:t + self.bins_before]
+		#
+		# return X
+		return Xdsgn2
 
 
 class RegressorSphist(Regressor):
@@ -92,9 +91,10 @@ class RegressorSphist(Regressor):
 
 		stim = params[self.name + "_val"]
 
-		paddedstim2 = np.concatenate((np.zeros(self.bins_before), stim[range(0, n_bins-1)])) # everything except the current spike at this time step
-		Xdsgn2 = hankel(paddedstim2[range(0, len(paddedstim2)-self.bins_before + 1)], paddedstim2[range(len(paddedstim2) - self.bins_before, len(paddedstim2))])
 
+
+		paddedstim2 = np.concatenate((np.zeros(self.bins_before), stim[:len(stim)-1])) # everything except the current spike at this time step
+		Xdsgn2 = hankel(paddedstim2[:len(paddedstim2) - self.bins_before + 1], paddedstim2[len(paddedstim2) - self.bins_before:len(paddedstim2)])
 
 		return Xdsgn2
 

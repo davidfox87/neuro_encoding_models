@@ -13,8 +13,8 @@ from scipy.linalg import block_diag
 from glmtools.fit import ridge_fit, neg_log_lik, mapfit_GLM
 
 if __name__ == "__main__":
+	stim, spikes = io.load_spk_times('stim.txt', 'spTimesControl/pn1SpTimes_reverseChirp.mat', 5, 30)
 
-	stim, spikes = io.load_spk_times('stim.txt', 'spTimes/pn2SpTimes_reverseChirp.mat', 5, 30)
 	# stim, spikes = io.load_spk_times('stimPlume.txt', 'pn1SpTimesPlume.mat', 5, 75)
 	nt = len(stim)
 
@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
 	w, msetest = ridge_fit(X_train, y_train, X_test, y_test, C_values)
 
-	ypred = (X_test[:, 1:ntfilt+1] @ w[1:ntfilt+1] + X_test[:, ntfilt + 1:] @ w[ntfilt + 1:])
+	ypred = (X_test[:, :ntfilt+1] @ w[:ntfilt+1] + X_test[:, ntfilt + 1:] @ w[ntfilt + 1:])
 	np.savetxt('glmpredPN1.dat', ypred, delimiter='\t')
 
 	t1, filt = dm.get_regressor_from_output("Opto", w[1:])
@@ -111,11 +111,11 @@ if __name__ == "__main__":
 	#Xstim = dm.get_regressor_from_dm('Opto', X_train[:, 1:])
 	Xstim = X_train[:, :ntfilt + 1]
 	# initialize stim filter using least squares
-	theta = np.linalg.inv(Xstim.T @ Xstim) @ Xstim.T @ y_train
+	#theta = np.linalg.inv(Xstim.T @ Xstim) @ Xstim.T @ y_train
 	# initialize spike - history weights randomly
-	spk_hist = np.random.normal(0, .2, nthist)
+	#spk_hist = np.random.normal(0, .2, nthist)
 
-	prs = np.concatenate([theta, spk_hist], axis=0)
+	prs = w
 
 	res = minimize(neg_log_lik, prs, args=(ntfilt, X_train, y_train, 1))
 	theta_ml = res['x']

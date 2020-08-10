@@ -19,7 +19,7 @@ if __name__ == "__main__":
 	nt = len(stim)
 
 	dtSp = .001
-	dtStim = 0.04
+	dtStim = 0.02
 	sampFactor = dtStim / dtSp
 
 	ntfilt = int(2000/sampFactor)
@@ -30,6 +30,8 @@ if __name__ == "__main__":
 
 	assert (sampfactor % 1 == 0, 'dtStim / dtSp must be an integer')
 	stim = stim + np.abs(stim[0])
+	stim = stim - stim.mean()
+
 	# if we make the sampling more coarse, we will get more spikes
 	stim_ = signal.resample(stim, len(stim) // int(sampfactor))  # 25 gives good results
 
