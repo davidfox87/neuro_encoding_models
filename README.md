@@ -10,7 +10,7 @@ This GLM model is a generalization of the "Linear-Nonlinear-Poisson" model that 
 Tell other users how to install your project locally. Optionally, include a gif to make the process even more clear for other people.
 
 **Usage:**
-Instruct other people on how to use your project after they’ve installed it. This would also be a good place to include screenshots of your project in action.
+Examine test scripts in sub-directory tests/ to see simple scripts illustrating how to simulate and fit the GLM to spike train data.
 
 **Credits:**
 
