@@ -50,20 +50,19 @@ def load_spk_data_neuromatch():
 	Load RGC data used in the neuromatch tutorial
 	:return:
 	"""
-	data = io.loadmat('RGCdata.mat')  # loadmat is a function in scipy.io
-	dt_stim = data['dtStim'].item()  # .item extracts a scalar value
-
-	# Extract the stimulus intensity
-	stim = data['Stim'].squeeze()  # .squeeze removes dimensions with 1 element
-
-	# Extract the spike counts for one cell
+	data = io.loadmat('data_RGCs/SpTimes.mat')  # loadmat is a function in scipy.io
 	cellnum = 2
-	spikes = data['SpCounts'][:, cellnum]
+	spTimes = data['SpTimes'][:, cellnum][0].squeeze()
 
-	# Don't use all of the timepoints in the dataset, for speed
-	keep_timepoints = 20000
-	stim = stim[:keep_timepoints]
-	spikes = spikes[:keep_timepoints]
+	stim = io.loadmat('data_RGCs/Stimtimes.mat')  # loadmat is a function in scipy.io
+	stimtimes = stim['stimtimes'].squeeze()
+	dt = stimtimes[1] - stimtimes[0]
 
-	return stim, spikes, dt_stim
+	stim = io.loadmat('data_RGCs/Stim.mat')
+	stim = stim['Stim'].squeeze()
 
+	# keep_timepoints = 120
+	# stim = stim[:keep_timepoints]
+	# spTimes = spTimes[:keep_timepoints]
+
+	return stim, spTimes, dt
