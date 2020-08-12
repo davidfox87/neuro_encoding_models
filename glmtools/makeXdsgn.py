@@ -99,16 +99,51 @@ class RegressorSphist(Regressor):
 		return Xdsgn2
 
 
-binfun = lambda t, dtSp: (t == 5) + int(t // dtSp)
+class Experiment:
+	"""
+	class to hold
+	"""
+	def __init__(self, stim, sptimes, dtSp, dtStim):
+		self._regressortype = {}
+		self._sptimes = sptimes
+		self._stim = stim
+		self._dtSp = dtSp
+		self._dtStim = dtStim
+
+	def register_spike_train(self, label):
+		self._regressortype[label] = 'spike history'
+
+	def registerContinuous(self, label):
+		self._regressortype[label] = 'continuous'
+
+	def register_point(self, label):
+		self._regressortype[label] = 'point'
+
+	@property
+	def regressortype(self):
+		return self._regressortype
+
+	@property
+	def dtStim(self):
+		return self._dtStim
+
+	@property
+	def dtSp(self):
+		return self._dtSp
+
+	@property
+	def stim(self):
+		return self._stim
+
 
 class DesignMatrix:
 	def __init__(self, dt=0.001, mintime=-1000, maxtime=1000):
 		self._dt = dt
 		self._mintime = mintime  # in sec
 		self._maxtime = maxtime  # in sec
+		self._times = np.arange(mintime, maxtime - dt / 2, dt) + dt / 2
+		self._bintimes = np.append(self._times - dt / 2, self._times[-1] + dt / 2)
 		self._regressors = []
-		self._times = np.arange(mintime, maxtime + dt / 2, dt) + dt / 2
-		self._bintimes = np.append(self._times, self._times[-1] + dt / 2)
 
 	def bin_spikes(self, spikes):
 		"""
@@ -116,7 +151,7 @@ class DesignMatrix:
 		:param spikes: indices of spikes
 		:return: binned spike count
 		"""
-		return np.histogram(spikes, self._times)[0]
+		return np.histogram(spikes, self._bintimes)[0]
 
 	def empty_matrix(self):
 		n_regressor_timepoints = sum([r.duration() for r in self._regressors])
@@ -213,4 +248,63 @@ class GLM:
 
 # add trial would append to dm design matrix
 
-# get binned spike train
+#get binned spike train
+
+
+class DesignSpec:
+	def __init__(self, exp: Experiment, trialinds: list):
+		self._exp = exp
+		self._trialinds = trialinds
+
+		assert(exp.dtStim > exp.dtSp, 'dtStim must be bigger than dtSp')
+		self.sampfactor = exp.dtStim / exp.dtSp
+		assert (self.sampfactor % 1 == 0, 'dtSp does not evenly divide dtStim: dtStim / dtSp must be an integer')
+		# if we make the sampling more coarse, we will get more spikes
+		self._stim = signal.resample(exp.stim, len(exp.stim) // int(self.sampfactor))  # 25 gives good results
+
+		self.nt = len(self._stim)
+		self.dt_ = exp.dtSp * self.sampfactor
+
+	def compileDesignMatrixFromTrialIndices(self):
+		exp_ = self._exp
+		dt = self.dt_
+
+		ntfilt = int(2000 / self.sampfactor)
+		ntsphist = int(500 / self.sampfactor)
+
+		dm = DesignMatrix(dt, 0, self.nt*dt)
+
+		for name in exp_.regressortype:
+			if exp_.regressortype[name] == 'continuous':
+				dm.add_regressor(RegressorContinuous(name, ntfilt))
+			if exp_.regressortype[name] == 'spike history':
+				dm.add_regressor(RegressorSphist(name, ntsphist))
+
+		Xfull = dm.empty_matrix()
+		Yfull = np.asarray([])
+
+		for tr in self._trialinds:
+			print('forming design matrix from trial indices')
+			binned_spikes = dm.bin_spikes(exp_._sptimes[tr])
+
+			# where does the actual stim come from?
+			d = {}
+			for i in exp_.regressortype:
+				d[i + '_time'] = 0
+				d[i + '_val'] = self._stim  # this needs to be generalized to any regressor val
+
+			X = dm.build_matrix(d)
+
+			Xfull = np.concatenate([Xfull, X], axis=0)
+			Yfull = np.concatenate([Yfull, binned_spikes])
+
+		Xfull = stats.zscore(Xfull)
+		Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
+
+		return Xfull, Yfull
+
+	@property
+	def stim(self):
+		return self._stim
+
+

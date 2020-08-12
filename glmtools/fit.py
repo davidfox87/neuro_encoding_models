@@ -28,15 +28,43 @@ def ridge_fit(Xtrain, ytrain, Xtest, ytest, alphavals):
 		print("ridge test mse: ", msetrain[i])
 
 		wridge[:, i] = w
-		#plt.plot(w[1:])
+		plt.plot(w[1:])
 
 	imin = np.argmin(msetest)
-	#plt.plot(wridge[1:, imin], linewidth=4)
+	plt.plot(wridge[1:, imin], linewidth=4)
 	return wridge[:, imin], msetest
 
 
+def ridgefitCV(folds_train, folds_test, alphavals):
+	"""
+	# logic
+	# for each value of ridge lambda value,
+	# 	calculate an average MSE across folds
+	# choose lambda that minimizes average MSE across folds
+	:param folds:
+	:param alphavals:
+	:return:
+	"""
+	msetest = np.zeros(len(alphavals))
+	for i, alpha_ in enumerate(alphavals):
+		print(i)
+		msetest_fold = 0
+		for train, test in zip(folds_train, folds_test):
+			X_train, X_test = train[0], test[0]
+			y_train, y_test = train[1], test[1]
 
+			model = Ridge(alpha=alpha_).fit(X_train, y_train)
 
+			w = model.coef_
+			#plt.plot(w[1:])
+			msetest_fold += mean_squared_error(y_test, model.predict(X_test))
+
+		# take the avereage mse across folds for this alpha
+		msetest[i] = msetest_fold / len(folds_train)
+
+	plt.plot(msetest, '-ob')
+
+	return alphavals[np.argmin(msetest)]
 
 def neg_log_lik(theta: np.ndarray, ntfilt: int,
 				X: np.ndarray, y: np.ndarray, flag: int) -> float:
