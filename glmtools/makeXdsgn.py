@@ -269,7 +269,7 @@ class DesignSpec:
 		exp_ = self._exp
 		dt = self.dt_
 
-		ntfilt = int(2000 / self.sampfactor)
+		ntfilt = int(3000 / self.sampfactor)
 		ntsphist = int(500 / self.sampfactor)
 
 		dm = DesignMatrix(dt, 0, self.nt*dt)

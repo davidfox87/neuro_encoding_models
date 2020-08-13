@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 from sklearn.linear_model import Ridge
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 from glmtools.makeXdsgn import DesignMatrix
 
 
@@ -56,13 +56,14 @@ def ridgefitCV(folds_train, folds_test, alphavals):
 			model = Ridge(alpha=alpha_).fit(X_train, y_train)
 
 			w = model.coef_
-			#plt.plot(w[1:])
+
+			# msetest_fold += r2_score(y_test, model.predict(X_test))
 			msetest_fold += mean_squared_error(y_test, model.predict(X_test))
 
-		# take the avereage mse across folds for this alpha
+		# take the average mse across folds for this alpha
 		msetest[i] = msetest_fold / len(folds_train)
 
-	plt.plot(msetest, '-ob')
+	# plt.plot(msetest, '-ob')
 
 	return alphavals[np.argmin(msetest)]
 

@@ -12,6 +12,7 @@ from scipy.sparse import spdiags
 from scipy.linalg import block_diag
 from glmtools.fit import ridge_fit, neg_log_lik, mapfit_GLM, ridgefitCV
 from sklearn.model_selection import KFold
+import sys
 
 
 if __name__ == "__main__":
@@ -21,7 +22,9 @@ if __name__ == "__main__":
 	# stim, spikes = io.load_spk_times('stim.txt', 'spTimesORNControl/orn4SpTimes_reverseChirp.mat', 5, 30)
 
 	dtSp = .001
-	dtStim = 0.02
+	dtStim = 0.02 # you can't make this bin too wide because then you will lose the resolution on the stim
+					# it's a tradeoff between having enough data and a small bin
+					# i think these methods are most useful when you have a lot of data
 
 	# define experiment and register covariates
 	exp = Experiment(stim, spikes, dtSp, dtStim)
@@ -48,27 +51,30 @@ if __name__ == "__main__":
 		X_test, y_test = dspec.compileDesignMatrixFromTrialIndices()
 		folds_test.append((X_test, y_test))
 
-
-	lamvals = np.logspace(-6, 6, 20)
+	lamvals = np.logspace(1, 6, 30)
 	# logic
 	# for each value of ridge lambda value,
 	# 	calculate an average MSE across folds
 	# choose lambda that minimizes average MSE across folds
-	alpha = ridgefitCV(folds_train, folds_test, lamvals)
+	alpha_ = ridgefitCV(folds_train, folds_test, lamvals)
 
 	dspec = DesignSpec(exp, trial_indices)
 	X, y = dspec.compileDesignMatrixFromTrialIndices()
 
-	model = Ridge(alpha=alpha).fit(X, y)
+	model = Ridge(alpha=alpha_).fit(X, y)
 
 	# Get the coefs of the model fit to training data
 	w = model.coef_
+	t = np.arange(-(len(w[1:])) + 1, 1) * dspec.dt_
 
 	fig, ax = plt.subplots()
-	nmaplt.plot_spike_filter(ax, w[1:, ], dtStim/dtSp)
+	nmaplt.plot_spike_filter(ax, w[1:, ], dspec.dt_)
 
 	# save the filter
-	np.savetxt('glmpredPN1.dat', ypred, delimiter='\t')
+	#np.savetxt('spTimesPNControl/pn9.txt', np.c_[t, w[1:]])
+	np.savetxt('spTimesPNU13AKD/pn9.txt', np.c_[t, w[1:]])
+
+	#np.savetxt('glmpredPN1.dat', ypred, delimiter='\t')
 
 
 
