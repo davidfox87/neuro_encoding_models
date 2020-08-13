@@ -42,9 +42,9 @@ def plot_glm_matrices(X, y, nt=50):
 		sharey=True,
 		gridspec_kw=dict(width_ratios=(5, 1)),
 	)
-	#norm = BoundaryNorm([-1, -.2, .2, 1], 256)
-	#imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm", norm=norm)
-	imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm")
+	norm = BoundaryNorm([-1, -.2, .2, 1], 256)
+	imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm", norm=norm)
+	#imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm")
 
 	ax_x.set(
 		title="X\n(lagged stimulus)",

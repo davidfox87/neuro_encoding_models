@@ -33,7 +33,7 @@ def load_spk_times(stim, response, start, finish):
 	# spikes = np.genfromtxt(response, delimiter='\t')
 
 	binfun = lambda t: (t == start) + int(t // 0.001)
-	stim = stim[range(binfun(start), binfun(finish)+1)]
+	stim = stim[range(binfun(start)-1, binfun(finish))]
 
 	spTimes = spikes['spTimes'].squeeze()
 

@@ -16,22 +16,22 @@ import sys
 
 
 if __name__ == "__main__":
-	#stimfile = 'stim.txt'
-	stimfile = 'meanORNControlPSTH.txt'
+	stimfile = 'stim.txt'
+	#stimfile = 'meanORNControlPSTH.txt'
 	# orn1SpTimes_reverseChirp.mat
 	stim, spikes = io.load_spk_times(stimfile, 'spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
-	#stim, spikes = io.load_spk_times('stim.txt', 'spTimesPNU13AKD/pn9SpTimes_reverseChirp.mat', 5, 30)
-	# stim, spikes = io.load_spk_times('stim.txt', 'spTimesORNControl/orn4SpTimes_reverseChirp.mat', 5, 30)
+	#stim, spikes = io.load_spk_times('stim.txt', 'spTimesPNU13AKD/pn1SpTimes_reverseChirp.mat', 5, 30)
+	# stim, spikes = io.load_spk_times('stim.txt', 'spTimesORNControl/orn13SpTimes_reverseChirp.mat', 5, 30)
 
 	dtSp = .001
-	dtStim = 0.025 # you can't make this bin too wide because then you will lose the resolution on the stim
+	dtStim = 0.02 # you can't make this bin too wide because then you will lose the resolution on the stim
 					# it's a tradeoff between having enough data and a small bin
 					# i think these methods are most useful when you have a lot of data
 
 	# define experiment and register covariates
 	exp = Experiment(stim, spikes, dtSp, dtStim)
-	# exp.register_spike_train("PNspikes")
 	exp.registerContinuous('Optostim')
+	exp.register_spike_train("PNspikes")
 
 	# kfolds cross-validation
 	trials = len(spikes)
@@ -69,17 +69,20 @@ if __name__ == "__main__":
 	w = model.coef_
 	t = np.arange(-(len(w[1:])) + 1, 1) * dspec.dt_
 
-	fig, ax = plt.subplots()
-	nmaplt.plot_spike_filter(ax, w[1:, ], dspec.dt_)
+	ntfilt = dspec.ntfilt
+	nthist = dspec.ntsphist
 
+	fig, (ax1, ax2) = plt.subplots(1, 2)
+	nmaplt.plot_spike_filter(ax1, w[1:ntfilt+1, ], dspec.dt_)
+	nmaplt.plot_spike_filter(ax2, (w[ntfilt + 1:]), dspec.dt_)
 	# save the filter
-	#np.savetxt('spTimesPNControl/pn9.txt', np.c_[t, w[1:]])
+	# np.savetxt('spTimesORNControl/orn13.txt', np.c_[t, w[1:]])
+	# np.savetxt('spTimesPNControl/pn9.txt', np.c_[t, w[1:]])
 	# np.savetxt('spTimesPNU13AKD/pn9.txt', np.c_[t, w[1:]])
-
+	# np.savetxt('spTimesPNControl/ORNStimToPN/pn9.txt', np.c_[t, w[1:]])
 	#np.savetxt('glmpredPN1.dat', ypred, delimiter='\t')
 
-
-
+	plt.plot((X[:, 1:ntfilt + 1] @ w[1:ntfilt + 1] + X[:, ntfilt + 1:] @ (w[ntfilt + 1:])) / dspec.dt_ + 5)
 	# do from glmtools.fit import ridgeFit_linear_Gauss, ML_fit_GLM, MAP_Fit_GLM
 	C_values = np.logspace(-6, 6, 20)
 #

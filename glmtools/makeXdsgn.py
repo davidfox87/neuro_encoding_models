@@ -60,7 +60,7 @@ class RegressorContinuous(Regressor):
 
 		paddedstim2 = np.concatenate((np.zeros(self.bins_before - 1), stim))
 		Xdsgn2 = hankel(paddedstim2[:(len(paddedstim2) - self.bins_before + 1)],
-						stim[(len(stim) - self.bins_before):len(stim)])
+						stim[(len(stim) - self.bins_before):])
 
 		# padded_stim = np.concatenate([np.zeros(self.bins_before - 1), stim])
 
@@ -91,10 +91,9 @@ class RegressorSphist(Regressor):
 
 		stim = params[self.name + "_val"]
 
-
-
-		paddedstim2 = np.concatenate((np.zeros(self.bins_before), stim[:len(stim)-1])) # everything except the current spike at this time step
-		Xdsgn2 = hankel(paddedstim2[:len(paddedstim2) - self.bins_before + 1], paddedstim2[len(paddedstim2) - self.bins_before:len(paddedstim2)])
+		paddedstim2 = np.hstack((np.zeros(self.bins_before), stim[:-1])) # everything except the current spike at this time step
+		Xdsgn2 = hankel(paddedstim2[:-self.bins_before + 1],
+						paddedstim2[(len(paddedstim2) - self.bins_before):])
 
 		return Xdsgn2
 
@@ -134,6 +133,10 @@ class Experiment:
 	@property
 	def stim(self):
 		return self._stim
+
+	@property
+	def sptimes(self):
+		return self._sptimes
 
 
 class DesignMatrix:
@@ -265,33 +268,38 @@ class DesignSpec:
 		self.nt = len(self._stim)
 		self.dt_ = exp.dtSp * self.sampfactor
 
+		self._ntfilt = int(2000 / self.sampfactor)
+		self._ntsphist = int(2000 / self.sampfactor)
+
 	def compileDesignMatrixFromTrialIndices(self):
 		exp_ = self._exp
 		dt = self.dt_
-
-		ntfilt = int(2000 / self.sampfactor)
-		ntsphist = int(500 / self.sampfactor)
 
 		dm = DesignMatrix(dt, 0, self.nt*dt)
 
 		for name in exp_.regressortype:
 			if exp_.regressortype[name] == 'continuous':
-				dm.add_regressor(RegressorContinuous(name, ntfilt))
+				dm.add_regressor(RegressorContinuous(name, self._ntfilt))
 			if exp_.regressortype[name] == 'spike history':
-				dm.add_regressor(RegressorSphist(name, ntsphist))
+				dm.add_regressor(RegressorSphist(name, self._ntsphist))
 
 		Xfull = dm.empty_matrix()
 		Yfull = np.asarray([])
 
 		for tr in self._trialinds:
 			print('forming design matrix from trial indices')
-			binned_spikes = dm.bin_spikes(exp_._sptimes[tr])
+			binned_spikes = dm.bin_spikes(exp_.sptimes[tr])
 
 			# where does the actual stim come from?
 			d = {}
 			for i in exp_.regressortype:
-				d[i + '_time'] = 0
-				d[i + '_val'] = self._stim  # this needs to be generalized to any regressor val
+				if exp_.regressortype[i] == 'spike history':
+					d[i + '_time'] = 0	# this time could be used to fetch that part of the stimulus but not really used right now
+					d[i + '_val'] = binned_spikes  # this needs to be generalized to any regressor val
+				else:
+					d[i + '_time'] = 0  # this time could be used to fetch that part of the stimulus but not really used right now
+					d[i + '_val'] = self._stim
+
 
 			X = dm.build_matrix(d)
 
@@ -306,5 +314,13 @@ class DesignSpec:
 	@property
 	def stim(self):
 		return self._stim
+
+	@property
+	def ntfilt(self):
+		return self._ntfilt
+
+	@property
+	def ntsphist(self):
+		return self._ntsphist
 
 
