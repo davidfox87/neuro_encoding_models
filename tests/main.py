@@ -16,13 +16,15 @@ import sys
 
 
 if __name__ == "__main__":
+	#stimfile = 'stim.txt'
+	stimfile = 'meanORNControlPSTH.txt'
 	# orn1SpTimes_reverseChirp.mat
-	# stim, spikes = io.load_spk_times('stim.txt', 'spTimesPNControl/pn9SpTimes_reverseChirp.mat', 5, 30)
-	stim, spikes = io.load_spk_times('stim.txt', 'spTimesPNU13AKD/pn9SpTimes_reverseChirp.mat', 5, 30)
+	stim, spikes = io.load_spk_times(stimfile, 'spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
+	#stim, spikes = io.load_spk_times('stim.txt', 'spTimesPNU13AKD/pn9SpTimes_reverseChirp.mat', 5, 30)
 	# stim, spikes = io.load_spk_times('stim.txt', 'spTimesORNControl/orn4SpTimes_reverseChirp.mat', 5, 30)
 
 	dtSp = .001
-	dtStim = 0.02 # you can't make this bin too wide because then you will lose the resolution on the stim
+	dtStim = 0.025 # you can't make this bin too wide because then you will lose the resolution on the stim
 					# it's a tradeoff between having enough data and a small bin
 					# i think these methods are most useful when you have a lot of data
 
@@ -72,7 +74,7 @@ if __name__ == "__main__":
 
 	# save the filter
 	#np.savetxt('spTimesPNControl/pn9.txt', np.c_[t, w[1:]])
-	np.savetxt('spTimesPNU13AKD/pn9.txt', np.c_[t, w[1:]])
+	# np.savetxt('spTimesPNU13AKD/pn9.txt', np.c_[t, w[1:]])
 
 	#np.savetxt('glmpredPN1.dat', ypred, delimiter='\t')
 
