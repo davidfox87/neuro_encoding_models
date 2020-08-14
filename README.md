@@ -33,7 +33,11 @@ To install the modules, all you have to do is the following:
 
 **System Requirements**
 -
-PY
+1. Python 3.8 or  above
+2. Numpy version 1.19 or above
+3. Scipy version 1.5.1 or above
+4. Matplotlib version 3.3 or above
+5. Scikit-learn version 0.23.1 or above
 
 **Usage:**
 -
