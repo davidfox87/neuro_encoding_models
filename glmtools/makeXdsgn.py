@@ -58,10 +58,8 @@ class RegressorContinuous(Regressor):
 		# Xdsgn = np.fliplr(toeplitz(padded_stim[range(self.bins_before, n1 + 1)],
 		#		padded_stim[range(self.bins_before - 1, -1, -1)]))
 
-		paddedstim2 = np.concatenate((np.zeros(self.bins_before - 1), stim))
-		Xdsgn2 = hankel(paddedstim2[:(len(paddedstim2) - self.bins_before + 1)],
-						stim[(len(stim) - self.bins_before):])
-
+		paddedstim2 = np.hstack((np.zeros(self.bins_before - 1), stim))
+		Xdsgn2 = hankel(paddedstim2[:(-self.bins_before + 1)], stim[(-self.bins_before):])
 		# padded_stim = np.concatenate([np.zeros(self.bins_before - 1), stim])
 
 		# Construct a matrix where each row has the d frames of
@@ -92,8 +90,7 @@ class RegressorSphist(Regressor):
 		stim = params[self.name + "_val"]
 
 		paddedstim2 = np.hstack((np.zeros(self.bins_before), stim[:-1])) # everything except the current spike at this time step
-		Xdsgn2 = hankel(paddedstim2[:-self.bins_before + 1],
-						paddedstim2[(len(paddedstim2) - self.bins_before):])
+		Xdsgn2 = hankel(paddedstim2[:-self.bins_before + 1], paddedstim2[(-self.bins_before):])
 
 		return Xdsgn2
 
@@ -269,7 +266,7 @@ class DesignSpec:
 		self.dt_ = exp.dtSp * self.sampfactor
 
 		self._ntfilt = int(2000 / self.sampfactor)
-		self._ntsphist = int(2000 / self.sampfactor)
+		self._ntsphist = int(1000 / self.sampfactor)
 
 	def compileDesignMatrixFromTrialIndices(self):
 		exp_ = self._exp

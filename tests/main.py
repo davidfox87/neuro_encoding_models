@@ -82,7 +82,7 @@ if __name__ == "__main__":
 	# np.savetxt('spTimesPNControl/ORNStimToPN/pn9.txt', np.c_[t, w[1:]])
 	#np.savetxt('glmpredPN1.dat', ypred, delimiter='\t')
 
-	plt.plot((X[:, 1:ntfilt + 1] @ w[1:ntfilt + 1] + X[:, ntfilt + 1:] @ (w[ntfilt + 1:])) / dspec.dt_ + 5)
+	plt.plot(np.exp(X[:, 1:ntfilt + 1] @ w[1:ntfilt + 1] + X[:, ntfilt + 1:] @ (w[ntfilt + 1:])) / dspec.dt_)
 	# do from glmtools.fit import ridgeFit_linear_Gauss, ML_fit_GLM, MAP_Fit_GLM
 	C_values = np.logspace(-6, 6, 20)
 #
