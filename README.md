@@ -23,10 +23,16 @@ Maximum-likelihood and MAP estimation methods can also estimate filter weights a
 nonlinearity and poisson spike rate.  
 
 **Installation:**
-To be done
+To install the modules, all you have to do is the following:
+   1) download dist/NeuroGLM-1.0.tar.gz
+   2) unpack it
+   3) from the NeuroGLM-1.0 directory run python setup.py install
+
 
 **Usage:**
-Examine test scripts in sub-directory tests/ to see simple scripts illustrating how to simulate and fit the GLM to spike train data.
+Examine test scripts in sub-directory tests/ to see simple scripts illustrating how to fit stimulus temporal and 
+spike history filters to spike train data.
+
 Also to come is a jupyter notebook with embedded code and plots
 
 **Credits:**
