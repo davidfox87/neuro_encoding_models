@@ -20,25 +20,25 @@ def load_data(sessionNum):
 
 	return dat
 
-def load_spk_times(stim, response, start, finish):
+def load_spk_times(stim_, response, start, finish):
 	'''
 	load stimulus and spike raster with only the relevant stimulus part of the trial
 	:param stim: column data
 	:param response: 3 columns: col, row, data
 	:return:
 	'''
-	stim = np.genfromtxt(stim, delimiter='\t')
+	stim = np.genfromtxt(stim_, delimiter='\t')
 	nt = len(stim)
 	spikes = io.loadmat(response)
 	# spikes = np.genfromtxt(response, delimiter='\t')
 
-	binfun = lambda t: (t == start) + int(t // 0.001)
-	stim = stim[range(binfun(start)-1, binfun(finish))]
+	binfun = lambda t: int(t / 0.001) - (t == start)
+	stim = stim[range(binfun(start)+1, binfun(finish))]
 
 	spTimes = spikes['spTimes'].squeeze()
 
 	# chop off pre and post
-	sps = [list(filter(lambda num: (num > start and num <= finish), spTimes_.squeeze())) for spTimes_ in spTimes]
+	sps = [list(filter(lambda num: (num >= start and num < finish), spTimes_.squeeze())) for spTimes_ in spTimes]
 
 	# subtract 5 from every element in sps so every spTime is relative to 0 and not 5
 	sps = [list(map(lambda x: x - start, sps_)) for sps_ in sps]

@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy import stats
 from sklearn.linear_model import RidgeCV
-from glmtools.makeXdsgn import DesignMatrix, RegressorContinuous, RegressorSphist, GLM
+from glmtools.make_xdsgn import DesignMatrix, RegressorContinuous, RegressorSphist, GLM
 from scipy.optimize import minimize
 from utils import plot as nmaplt
 from scipy import signal

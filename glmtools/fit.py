@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, r2_score
-from glmtools.makeXdsgn import DesignMatrix
+from glmtools.make_xdsgn import DesignMatrix
 
 
 def ridge_fit(Xtrain, ytrain, Xtest, ytest, alphavals):
@@ -68,7 +68,7 @@ def ridgefitCV(folds_train, folds_test, alphavals):
 	return alphavals[np.argmin(msetest)]
 
 def neg_log_lik(theta: np.ndarray, ntfilt: int,
-				X: np.ndarray, y: np.ndarray, flag: int) -> float:
+				X: np.ndarray, y: np.ndarray, flag: int):
 	"""
 	Compute negative log-likelihood of data under an LNP model with a single
 	filter and fixed nonlinearity (exp), as a function of filter parameters
@@ -83,26 +83,65 @@ def neg_log_lik(theta: np.ndarray, ntfilt: int,
 	"""
 
 	# extract some stuff I will use
-	k = theta[:ntfilt+1]
-	XStim = X[:, :ntfilt+1]
-	# k = dm.get_regressor_from_output('Opto', theta)[1]
-	# XStim = dm.get_regressor_from_dm('Opto', X)
+	k = theta[1:ntfilt+1]				# stim filter
+	XStim = X[:, :ntfilt]				# stim convolved with basis functions
+	dc = theta[0]  						# dc current
 
 	if flag:
-		h = theta[ntfilt+1:]
-		XSp = X[:, ntfilt+1:]
-		# XSp = dm.get_regressor_from_dm('Spk_hist', X)
-		# h = dm.get_regressor_from_output('Spk_hist', theta)[1]
+		h = theta[ntfilt+1:]			# post-spike filter
+		XSp = X[:, ntfilt:]				# spike response convolved with basis functions
 
-		itot = XStim @ k + XSp @ h
+		itot = XStim @ k + XSp @ h + dc
 	else:
-		itot = XStim @ k
+		itot = XStim @ k + dc
+
 
 	# Compute GLM filter output and conditional intensity
-
+	nzidx = np.nonzero(y)[0]
 	rate = np.exp(itot)
-	log_lik = y @ np.log(rate) - rate.sum()
-	return -log_lik
+
+	#return -(y @ np.log(rate) - rate.sum())
+	Trm0 = np.sum(rate) * 0.001				# non-spike term
+	Trm1 = -np.sum(itot[nzidx])		# spike term
+	logli = Trm1 + Trm0
+
+	return logli
+
+
+def poisson_deriv(theta: np.ndarray, ntfilt: int,
+				X: np.ndarray, y: np.ndarray, flag: int):
+
+	k = theta[1:ntfilt+1]				# stim filter
+	XStim = X[:, :ntfilt]				# stim convolved with basis functions
+	dc = theta[0]  						# dc current
+
+	if flag:
+		h = theta[ntfilt+1:]			# post-spike filter
+		XSp = X[:, ntfilt:]				# spike response convolved with basis functions
+
+		itot = XStim @ k + XSp @ h + dc
+	else:
+		itot = XStim @ k + dc
+
+
+	# Compute GLM filter output and conditional intensity
+	nzidx = np.nonzero(y)[0]
+	rate = np.exp(itot)*0.001
+
+	dldk0 = (rate.T @ XStim).T
+	dldb0 = rate.sum()
+	dldh0 = (rate.T@XSp).T
+
+	dldk1 = XStim[nzidx, :].sum(axis=0).T
+	dldb1 = y.sum()
+	dldh1 = XSp[nzidx, :].sum(axis=0)
+
+	dldk = dldk0*0.001 - dldk1
+	dldb = dldb0*0.001 - dldb1
+	dldh = dldh0*0.001 - dldh1
+
+	return np.hstack((dldk, dldb, dldh))
+
 
 def neg_log_posterior(prs, negloglifun, Cinv):
 	"""
@@ -144,3 +183,22 @@ def mapfit_GLM(prs, ntfilt, stim, sps, Cinv, flag):
 	res = minimize(lpost, prs, options={'disp': True})
 
 	return res['x']
+
+def poisson(wts, x, y):
+	'''
+	negative log-likelihood of data under the Poisson model
+	:param ws: 	[m x 1] regression weights
+	:param x: 	[N x m] regressors
+	:param y: 	[N x 1] output (binary vector of 1s and 0s
+	:return:
+	'''
+
+	xproj = x@wts
+
+	f = np.exp(xproj)
+
+	nzidx = np.nonzero(f)[0]
+
+	negloglik = -y[nzidx].T@np.log(f[nzidx]) + np.sum(f)
+
+	return negloglik

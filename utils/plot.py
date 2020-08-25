@@ -43,8 +43,8 @@ def plot_glm_matrices(X, y, nt=50):
 		gridspec_kw=dict(width_ratios=(5, 1)),
 	)
 	norm = BoundaryNorm([-1, -.2, .2, 1], 256)
-	imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm", norm=norm)
-	#imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm")
+	#imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm", norm=norm)
+	imx = ax_x.pcolormesh(X[:nt], cmap="coolwarm")
 
 	ax_x.set(
 		title="X\n(lagged stimulus)",
@@ -64,7 +64,7 @@ def plot_glm_matrices(X, y, nt=50):
 	# not sure why this normalization doesn't work for my spike count
 	# but does for neuromatch. What's the difference
 	norm = BoundaryNorm(np.arange(y.max() + 1), 256)
-	imy = ax_y.pcolormesh(Y[:nt], cmap="magma", norm=norm)
+	imy = ax_y.pcolormesh(Y[:nt], cmap="magma")
 	ax_y.set(
 		title="Y\n(spike count)",
 		xticks=[]
