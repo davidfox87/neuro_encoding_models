@@ -10,10 +10,10 @@ if __name__ == "__main__":
 
 	# load spike times
 	# t, v, stim, sptimes = izhikevich.simulate()
-	stim, sptimes = io.load_spk_times('stim.txt', 'spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
+	stim, sptimes = io.load_spk_times('../datasets/stim.txt', '../datasets/spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
 	stim = (stim / np.max(stim))*0.01
 
-	dt = 0.001
+	dt = 0.001 				# (size 1 (ms) bins)
 	duration = 25
 
 	# bin spikes
@@ -22,7 +22,6 @@ if __name__ == "__main__":
 	stim_ = np.tile(stim, (len(sptimes), 1))  # we need a stim for every trial
 
 	# make an Experiment object
-	dtSp = 0.001	# (size 1 (ms) bins)
 	expt = Experiment(dt, duration, stim=stim_, sptimes=sps)
 
 

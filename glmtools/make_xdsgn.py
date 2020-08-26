@@ -301,13 +301,8 @@ class DesignSpec:
 
 		# first make basis to represent the spike history filter
 		basis = RaisedCosine(100, 8, 1, 'sphist')
-		# should dt be 1 if sptrain is binned
-		#basis.makeNonlinearRaisedCos(self.expt.dtSp, [0, 100], 1)
 
 		basis.makeNonlinearRaisedCosPostSpike(self.expt.dtSp, [0.001, 1], 0.05)
-
-		# when the regressor is made with a basis object, then when the matrix func is called,
-		# a matrix will be created by convolving the stimulus (sptrain) with the basis functions
 		r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
 		self.regressors.append(r)
 
