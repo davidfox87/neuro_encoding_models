@@ -1,7 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import List, Set, Dict, Tuple
+import pickle
+from glmtools.model import GLM
 
+def get_psth(sptrain, winsize, samprate):
+	smooth_win = np.hanning(winsize) / np.hanning(winsize).sum()
+	# for multiple trials, average spikes across time bins and then convolve
+	psth = np.convolve(np.mean(sptrain, axis=1), smooth_win)
+	sigrange = np.arange(winsize // 2, winsize // 2 + len(sptrain))
+	psth_ = psth[sigrange]*samprate
+	return psth_
 
 def default_pars(**kwargs) -> Dict[str, float]:
 	pars = {}
@@ -134,3 +143,31 @@ if __name__ == "__main__":
 	ax2.plot(t, i_syn, 'k', linewidth=0.5)
 	ax3.plot(t, v, 'k', linewidth=0.5)
 	ax4.plot(t, fr, 'k', linewidth=0.5)
+
+	# read in pars for GLM using pickle
+	pkl_file = open('../tests/glmpars_vm_to_spiking.pkl', 'rb')
+	glmpars = pickle.load(pkl_file)
+	k = glmpars['k']
+	h = glmpars['h']
+	dc = glmpars['dc']
+
+	# simulate a GLM using these parameters
+	glm = GLM(pars['dt'], k, h, dc)
+
+	# need to scale the output Vm for it to work properly
+	v = (v / abs(np.max(v))) * 0.01
+
+	# simulate GLM with model Vm and output a prediction of spikes
+	sptimes = np.zeros((len(t), 5))
+	sptrain =  np.zeros((len(t), 5))
+	for i in range(5):
+		_, sps = glm.simulate(v)
+		sptimes[:, i] = sps * t
+		sptrain[:, i] = sps
+
+	plt.eventplot(sptimes.T, linewidth=0.5)
+	psth = get_psth(sptrain, 100, 10)
+
+	# normalize
+	psth /= np.max(np.abs(psth), axis=0)
+	plt.plot(t, (5*psth)-0.5, 'k', linewidth=0.5)

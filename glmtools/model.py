@@ -12,7 +12,7 @@ class GLM:
 	post-spike current to the linear input after every spike.
 
 	'''
-	def __init__(self, dspec: DesignSpec, k, h, dc):
+	def __init__(self, dt, k, h, dc):
 		'''
 
 		:param k: stimulus filter
@@ -21,7 +21,7 @@ class GLM:
 		self.k_ = np.asarray([k.T])
 		self.h_ = h
 		self.dc_ = dc
-		self.dspec_ = dspec
+		self.dt_ = dt
 
 	def simulate(self, stim):
 
@@ -29,7 +29,7 @@ class GLM:
 
 		nbins_per_eval = 1  # Default number of bins to update for each spike
 
-		dt = 0.001	# bin size for simulation
+		dt = self.dt_			# bin size for simulation
 		slen = len(stim)  		# length of stimulus
 		rlen = slen		  		# length of binned spike response
 
