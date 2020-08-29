@@ -341,7 +341,7 @@ class DesignSpec:
 				# gets the stimulus based on the regressor name, the regressor name
 				# must match the field in the experiment object
 				name = kregressor.name
-				stim = self.expt.trial[name][tr]
+				stim = self.expt.trial[name][:, tr]
 
 				print('forming design matrix from trial indices')
 				# binned_spikes = dm.bin_spikes(self.expt.trial['sptrain'][tr])
