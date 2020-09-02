@@ -292,7 +292,7 @@ class DesignSpec:
 		self._trialinds = trialinds
 
 		self.dt_ = expt.dtSp
-		self._ntfilt = 1000
+		self._ntfilt = 2000
 		self._ntsphist = 100
 
 		self.regressors = []
@@ -310,7 +310,7 @@ class DesignSpec:
 		# make basis to represent stim filter
 		basis = RaisedCosine(100, 5, 1, 'stim')
 
-		basis.makeNonlinearRaisedCosStim(self.expt.dtSp, [1, 400], 10, self._ntfilt)
+		basis.makeNonlinearRaisedCosStim(self.expt.dtSp, [1, 700], 10, self._ntfilt)
 		r = RegressorContinuous(self.expt.regressortype['stim'], self._ntfilt, basis=basis)
 		self.regressors.append(r)
 

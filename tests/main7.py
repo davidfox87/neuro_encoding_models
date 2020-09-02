@@ -5,6 +5,8 @@ from glmtools.make_xdsgn import Experiment, DesignSpec
 from scipy.optimize import minimize
 from glmtools.fit import neg_log_lik
 import pickle
+from glmtools.model import GLM
+
 
 if __name__ == "__main__":
 
@@ -50,12 +52,7 @@ if __name__ == "__main__":
 
 	# use linear regression to feed in an initial guess for minimize
 
-	# prs = np.linalg.inv(X.T @ X) @ X.T @ y
-	#prs = np.concatenate((np.asarray([0]), prs), axis=0)
-
-	prs = [0.0, -16.9989, 4.5455, 1.1125, 0.8270, -1.3354]
-	ih_pars = np.random.normal(0, .2,  8)
-	prs = np.concatenate((prs, ih_pars), axis=0)
+	prs = np.random.normal(0, .2, 14)
 	res = minimize(neg_log_lik, prs, args=(5, X, y, 1),
 										options={'maxiter': 1000, 'disp': True})
 
@@ -80,47 +77,28 @@ if __name__ == "__main__":
 	# pickle dictionary using protocol 0
 	pickle.dump(data, output)
 
+	glm = GLM(dspec.expt.dtSp, k, h, dc)
 
+	# this is where we put the model Vm to get a transform Vm to spikes
+	stim, sptimes = io.load_spk_times('../datasets/lpVmPN1.txt', '../datasets/spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
+	test = np.apply_along_axis(lambda x: x - np.mean(x), 0, stim)
+	stim = np.apply_along_axis(lambda x: x / np.std(x), 0, test)
+	stim *= 0.01
+	#stim = (stim / abs(np.max(stim))) * 0.01
+	# get prediction of spike count over time
 
+	nsim = 10
+	sps_ = np.empty((len(stim), nsim))
+	actual = list(map(sp_count_fun, sptimes))
+	actual_ = list(map(lambda x: x * (np.arange(len(stim)) + 1) * dt, actual))
+	for i in range(5):
+		sps_[:, i] = actual_[i].T
 
-	# for testing purposes load filters in from MATLAB and
-	# compare the simGLM method with glm.simulate
-	# we
-	# glm = GLM(dspec, k, h, dc)
-	#
-	#
-	#
-	# # this is where we put the model Vm to get a transform Vm to spikes
-	# stim, sptimes = io.load_spk_times('../datasets/lpVmPN1.txt', '../datasets/spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
-	# #test = np.apply_along_axis(lambda x: x - np.mean(x), 0, stim)
-	# #stim = np.apply_along_axis(lambda x: x / np.std(x), 0, test)
-	# #stim *= 0.1
-	# stim = (stim / abs(np.max(stim))) * 0.01
-	# # get prediction of spike count over time
-	#
-	# nsim = 10
-	# sps_ = np.empty((len(stim), nsim))
-	# actual = list(map(sp_count_fun, sptimes))
-	# actual_ = list(map(lambda x: x * (np.arange(len(stim)) + 1) * dt, actual))
-	# for i in range(5):
-	# 	sps_[:, i] = actual_[i].T
-	#
-	# for i in range(5, nsim):
-	# 	tsp, sps = glm.simulate(stim[:, i-5])
-	# 	sps_[:, i] = sps*np.arange(len(sps))*dt
-	# colors1 = ['C{}'.format(1) for i in range(5)]
-	# colors2 = ['C{}'.format(2) for i in range(5)]
-	# colors = colors1 + colors2
-	#
-	# plt.eventplot(sps_.T, colors=colors, linewidth=0.5)
-	#
-	# fig, (ax1, ax2) = plt.subplots(1, 2)
-	# ax1.plot(kt, k, '-ok', linewidth=1)
-	# ax2.plot(ht, h, '-ok', linewidth=1)
-	# ax1.plot([-1, 0], [0, 0], '--k')
-	# ax2.plot([0, .5], [0, 0], '--k')
-	# ax2.set_xlim(0, 0.5)
-	# ax1.set_ylim(-0.1, .8)
-	# plt.show()
+	for i in range(5, nsim):
+		tsp, sps = glm.simulate(stim[:, i-5])
+		sps_[:, i] = sps*np.arange(len(sps))*dt
+	colors1 = ['C{}'.format(1) for i in range(5)]
+	colors2 = ['C{}'.format(2) for i in range(5)]
+	colors = colors1 + colors2
 
-
+	plt.eventplot(sps_.T, colors=colors, linewidth=0.5)
