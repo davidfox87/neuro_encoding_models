@@ -7,7 +7,12 @@ from glmtools.fit import neg_log_lik
 import pickle
 from glmtools.model import GLM
 
-
+"""
+Refer to Pillow et al., 2005 for more info.
+This script fits model parameters, K, h, dc of a 
+Poisson Generalized linear model.
+ 
+"""
 if __name__ == "__main__":
 
 	# load spike times

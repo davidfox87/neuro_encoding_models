@@ -1,24 +1,7 @@
 import numpy as np
 from scipy import sparse
 import scipy.io as io
-
-def load_data(sessionNum):
-	'''
-	load steinmetz data set. Requires downloading .npz in top-level directory
-
-	:return: data dictionary associated with given animal
-	'''
-
-	alldat = np.load('steinmetz_NMA_part1.npz', allow_pickle=True)['dat']
-	alldat = np.hstack((alldat, np.load('steinmetz_NMA_part2.npz', allow_pickle=True)['dat']))
-	alldat = np.hstack((alldat, np.load('steinmetz_NMA_part3.npz', allow_pickle=True)['dat']))
-
-	# session 11?
-	dat = alldat[sessionNum]
-
-	print(dat.keys())
-
-	return dat
+from sklearn.impute import KNNImputer
 
 def load_spk_times(stim_, response, start, finish):
 	'''
@@ -45,24 +28,18 @@ def load_spk_times(stim_, response, start, finish):
 
 	return stim, sps
 
-def load_spk_data_neuromatch():
-	"""
-	Load RGC data used in the neuromatch tutorial
-	:return:
-	"""
-	data = io.loadmat('data_RGCs/SpTimes.mat')  # loadmat is a function in scipy.io
-	cellnum = 2
-	spTimes = data['SpTimes'][:, cellnum][0].squeeze()
+def load_behavior(data, start, finish, param):
+	Fs = 50											# sample rate (Hz)
+	dat = io.loadmat(data)
+	dat_ = dat['flyData'][param]
+	response = dat_[0][0]
+	# response = response[int(start * Fs):int(finish * Fs), :]
 
-	stim = io.loadmat('data_RGCs/Stimtimes.mat')  # loadmat is a function in scipy.io
-	stimtimes = stim['stimtimes'].squeeze()
-	dt = stimtimes[1] - stimtimes[0]
+	imputer = KNNImputer(n_neighbors=2, weights="uniform") # replace nans with an average of the last 2 data points
+	response = imputer.fit_transform(response)
 
-	stim = io.loadmat('data_RGCs/Stim.mat')
-	stim = stim['Stim'].squeeze()
+	stim = dat['flyData']['stim']
+	stim = stim[0][0]
+	# stim = stim[int(start * Fs):int(finish * Fs), :]
 
-	# keep_timepoints = 120
-	# stim = stim[:keep_timepoints]
-	# spTimes = spTimes[:keep_timepoints]
-
-	return stim, spTimes, dt
+	return stim, response

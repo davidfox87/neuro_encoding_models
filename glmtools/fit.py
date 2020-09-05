@@ -28,11 +28,11 @@ def ridge_fit(Xtrain, ytrain, Xtest, ytest, alphavals):
 		print("ridge test mse: ", msetrain[i])
 
 		wridge[:, i] = w
-		plt.plot(w[1:])
+		# plt.plot(w[1:])
 
 	imin = np.argmin(msetest)
 	plt.plot(wridge[1:, imin], linewidth=4)
-	return wridge[:, imin], msetest
+	return wridge[:, imin], msetest, alphavals[imin]
 
 
 def ridgefitCV(folds_train, folds_test, alphavals):
@@ -59,11 +59,11 @@ def ridgefitCV(folds_train, folds_test, alphavals):
 
 			# msetest_fold += r2_score(y_test, model.predict(X_test))
 			msetest_fold += mean_squared_error(y_test, model.predict(X_test))
-
+			#plt.plot(w[1:])
 		# take the average mse across folds for this alpha
 		msetest[i] = msetest_fold / len(folds_train)
 
-	# plt.plot(msetest, '-ob')
+	plt.plot(msetest, '-ob')
 
 	return alphavals[np.argmin(msetest)]
 
@@ -106,41 +106,6 @@ def neg_log_lik(theta: np.ndarray, ntfilt: int,
 	logli = Trm1 + Trm0
 
 	return logli
-
-
-def poisson_deriv(theta: np.ndarray, ntfilt: int,
-				X: np.ndarray, y: np.ndarray, flag: int):
-
-	k = theta[1:ntfilt+1]				# stim filter
-	XStim = X[:, :ntfilt]				# stim convolved with basis functions
-	dc = theta[0]  						# dc current
-
-	if flag:
-		h = theta[ntfilt+1:]			# post-spike filter
-		XSp = X[:, ntfilt:]				# spike response convolved with basis functions
-
-		itot = XStim @ k + XSp @ h + dc
-	else:
-		itot = XStim @ k + dc
-
-
-	# Compute GLM filter output and conditional intensity
-	nzidx = np.nonzero(y)[0]
-	rate = np.exp(itot)*0.001
-
-	dldk0 = (rate.T @ XStim).T
-	dldb0 = rate.sum()
-	dldh0 = (rate.T@XSp).T
-
-	dldk1 = XStim[nzidx, :].sum(axis=0).T
-	dldb1 = y.sum()
-	dldh1 = XSp[nzidx, :].sum(axis=0)
-
-	dldk = dldk0*0.001 - dldk1
-	dldb = dldb0*0.001 - dldb1
-	dldh = dldh0*0.001 - dldh1
-
-	return np.hstack((dldk, dldb, dldh))
 
 
 def neg_log_posterior(prs, negloglifun, Cinv):
@@ -202,3 +167,11 @@ def poisson(wts, x, y):
 	negloglik = -y[nzidx].T@np.log(f[nzidx]) + np.sum(f)
 
 	return negloglik
+
+
+def x_proj(wts, x, y):
+
+	xproj = x @ wts[1:] + wts[0]
+
+	return mean_squared_error(y, xproj)
+

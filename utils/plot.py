@@ -86,7 +86,7 @@ def plot_spike_filter(ax, theta, dt, **kws):
 		ax (axes):
 		theta (1D array): Filter weights, not including DC term.
 		dt (number): Duration of each time bin.
-		kws: Pass additional keyword arguments to plot()
+		kws: Pass additional keyword arguments to plot() so you can customize the plot
 	'''
 
 	d = len(theta)

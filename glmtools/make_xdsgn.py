@@ -82,17 +82,18 @@ class RegressorPoint(Regressor):
 class RegressorContinuous(Regressor):
 	def __init__(self, name, bins_before, bins_after=0, basis=None):
 		self.name = name
-		self.bins_after = bins_after
-		self.bins_before = bins_before
 		self.params = [name + "_time"]
-
-		# set super class parameters: every regressor may have a basis (or not)
-		# and associated with it is a dimension
 		self.basis = basis
-		self.edim_ = basis.nbases
+
+		if self.basis:
+			self.edim_ = basis.nbases
+		else:
+			self.bins_after = bins_after
+			self.bins_before = bins_before
+			self.edim_ = self.bins_before + self.bins_after
 
 	def duration(self, **kwargs):
-		return self.bins_before + self.bins_after
+		return self.edim_
 
 	def matrix(self, params, n_bins, _times, _bintimes, **kwargs):
 		time = params[self.name + "_time"]  # time is the time the regressor appears during the trial
@@ -131,15 +132,12 @@ class RegressorSphist(Regressor):
 
 	def matrix(self, params, n_bins, _times, _bintimes, **kwargs):
 		time = params[self.name + "_time"]  # time is the time the regressor appears during the trial
-
 		stim = params[self.name + "_val"]
 
 		if self.basis:
-			# paddedstim2 = np.hstack((np.zeros(1), stim))
 			print("convolving padded stimulus with raised cosine basis functions")
 			# convolve stimulus with bases functions
 			Xdsgn2 = self.spikefilt(stim, self.basis.B)
-			#Xdsgn2 = Xdsgn2[:-1, :]
 		else:
 			paddedstim2 = np.hstack((np.zeros(self.bins_before), stim[:-1])) # everything except the current spike at this time step
 			Xdsgn2 = hankel(paddedstim2[:-self.bins_before + 1], paddedstim2[(-self.bins_before):])
@@ -197,7 +195,7 @@ class DesignMatrix:
 		'''
 
 		d = {}
-		start_index = 1 # start from 1 to ignore bias
+		start_index = 0 # start from 1 to ignore bias
 		for r in self._regressors:
 			name = r.name
 
@@ -230,29 +228,21 @@ class DesignMatrix:
 		return dm
 
 
-
-
-
-
-
 class Experiment:
 	"""
 	class to hold
 	"""
-	def __init__(self, dtSp, duration, stim=None, sptimes=None):
+	def __init__(self, dtSp, duration, stim=None, sptimes=None, response=None):
 		self._regressortype = {}
-		self._sptimes = sptimes
+		self._sptimes = sptimes # if we dealing with behavior, this will be none
 		self._stim = stim
-
 		self.duration = duration
+		self.response = response # response contains the response variable, which can be either spike times or behavior trace
 		# to get the appropriate regressor, we would call dspec.expt.trial[regressor.name]
-		# for this to work, regressor must have the name of either 'sptrain' or 'stim'
-		# check what Pillow does
+		# for this to work, regressor must have the name of either 'sptrain' or 'stim' as we access via a
+		# dictionary
 		self.trial = {}
-
 		self._dtSp = dtSp
-		#self._dtStim = dtStim
-		# self.duration = len(stim) * dtSp
 
 	def register_spike_train(self, label):
 		# we initialize Experiment object with sptrain and stim
@@ -268,10 +258,6 @@ class Experiment:
 	@property
 	def regressortype(self):
 		return self._regressortype
-
-	@property
-	def dtStim(self):
-		return self._dtStim
 
 	@property
 	def dtSp(self):
@@ -292,7 +278,7 @@ class DesignSpec:
 		self._trialinds = trialinds
 
 		self.dt_ = expt.dtSp
-		self._ntfilt = 2000
+		self._ntfilt = int(15.0/self.expt.dtSp)
 		self._ntsphist = 100
 
 		self.regressors = []
@@ -306,12 +292,12 @@ class DesignSpec:
 		r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
 		self.regressors.append(r)
 
-	def addRegressorContinuous(self):
-		# make basis to represent stim filter
-		basis = RaisedCosine(100, 5, 1, 'stim')
+	def addRegressorContinuous(self, basis=None):
+		if basis:
+			r = RegressorContinuous(self.expt.regressortype['stim'], self._ntfilt, basis=basis)
+		else:
+			r = RegressorContinuous(self.expt.regressortype['stim'], self._ntfilt)
 
-		basis.makeNonlinearRaisedCosStim(self.expt.dtSp, [1, 700], 10, self._ntfilt)
-		r = RegressorContinuous(self.expt.regressortype['stim'], self._ntfilt, basis=basis)
 		self.regressors.append(r)
 
 
@@ -351,9 +337,11 @@ class DesignSpec:
 			X = dm.build_matrix(d)
 
 			Xfull = np.concatenate([Xfull, X], axis=0)
-			Yfull = np.concatenate([Yfull, stim])
+			Yfull = np.concatenate([Yfull, self.expt.response[:, tr]])
 
-		# Xfull = stats.zscore(Xfull)
+		#Xfull = stats.zscore(Xfull)
+
+		# if ridge regression and cross-validation, then we need to add intercept column
 		# Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
 
 		return dm, Xfull, Yfull
