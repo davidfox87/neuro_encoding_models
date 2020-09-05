@@ -48,7 +48,10 @@ Anyone can use this package in the google colab environment
 
 |   | View | Run |
 | - | --- | ---- |
-| Tutorial 1 | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
+| Tutorial 1: fitting a Poisson GLM to spike train data | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
+| Tutorial 2: using the GLM to predict responses to novel stimuli | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
+| Tutorial 3: Finding stim filter weights for behavior using ridge-regression and cross-validation | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
+| Tutorial 4: denoising stimulus filters by fitting in a vector space spanned by a basis of raised cosines | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
 
 **Credits:**
 
