@@ -44,7 +44,7 @@ To install the modules, all you have to do is the following:
 Examine test scripts in sub-directory tests/ to see simple scripts illustrating how to fit stimulus temporal and 
 spike history filters to spike train data.
 
-Anyone can use this package in the google colab environment
+Anyone can use this package within the google colab environment. Below you will find some tutorials to get you started. After you have played around with the notebooks, you can install the package following the steps in th installation section of this document.
 
 |   | View | Run |
 | - | --- | ---- |
