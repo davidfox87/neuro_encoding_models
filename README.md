@@ -48,7 +48,7 @@ Anyone can use this package in the google colab environment
 
 |   | View | Run |
 | - | --- | ---- |
-| Tutorial 1 | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)] | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
+| Tutorial 1 | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)] (https://nbviewer.jupyter.org/github/Foxy1987/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
 
 **Credits:**
 
