@@ -44,7 +44,11 @@ To install the modules, all you have to do is the following:
 Examine test scripts in sub-directory tests/ to see simple scripts illustrating how to fit stimulus temporal and 
 spike history filters to spike train data.
 
-Also to come is a jupyter notebook with embedded code and plots
+Anyone can use this package in the google colab environment
+
+|   | Run | View |
+| - | --- | ---- |
+| Tutorial 1 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](HowTo_fit_filters.ipynb) | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
 
 **Credits:**
 
