@@ -46,7 +46,7 @@ spike history filters to spike train data.
 
 Anyone can use this package in the google colab environment
 
-|   | Run | View |
+|   | View | Run |
 | - | --- | ---- |
 | Tutorial 1 | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](HowTo_fit_filters.ipynb) | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
 
