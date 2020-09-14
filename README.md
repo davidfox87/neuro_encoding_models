@@ -17,7 +17,7 @@ The goals is to understand what features of the input are being encoded by the o
 Currently, the package allows to fit three types of encoding models:
 1. a Poisson GLM using maximum liklihood fitting to specifically model spike train responses to stimuli
 2. an L2-regularized linear regression model (Ridge) - with the option of using raised cosine basis functions to fit 1D filters - using the Scipy framework. The regularization coefficient of ridge regression can be optimized by using 5-fold cross-validation.
-3. Convolutional neural networks (CNN) using Keras and Tensorflow framework. The CNN consists of an input layer, several hidden layers (convolutional layer, pooling layer, or fully-connected layer) and the output layer. The Scikit-learn python machine learning library can be used to tune the hyperparameters of the Keras CNN model.
+3. Convolutional neural networks (CNN) using Keras and Tensorflow framework. The CNN consists of an input layer, several hidden layers (convolutional layer, pooling layer, or fully-connected layer) and the output layer. Grid search with 5-fold cross-validation (from the Scikit-learn framework) is used to tune the hyperparameters of the Keras CNN model. 
 
 **Installation:**
 -
