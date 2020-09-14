@@ -2,11 +2,6 @@
 
 This package fits encoding models to data relating to measurements of neural spike trains and fly olfactory navigation behavior data. It is used to understand what temporal features of inputs are being encoded by an output. Once a model has been fit, it can be used to predict how a biological neuron or a fly will behave to stimuli they have not seen before.
 
-Currently, the package allows to fit three types of encoding models:
-	1. a Poisson GLM using maximum liklihood fitting to specifically model spike train responses to stimuli
-	2. an L2-regularized linear regression model (Ridge) - with the option of using raised cosine basis functions to fit 1D filters - using the Scipy version 1.5.1 framework. The regularization coefficient of ridge regression can be optimized by using 5-fold cross-validation.
-	3. Convolutional neural networks (CNN) using Keras and Tensorflow framework. The CNN consists of an input layer, several hidden layers (convolutional layer, pooling layer, or fully-connected layer) and the output layer. The Scikit-learn python machine learning library can be used to tune the hyperparameters of the Keras CNN model.
-    
 
 **Description:**
 -
@@ -16,6 +11,10 @@ Encoding models characterize the relationship between external or internal regre
 measured outputs (neural spike trains or behavior). Usually linear functions of inputs are nonlinearly transformed to produce estimates of outputs.
 The goals is to understand what features of the input are being encoded by the outputs
  
+Currently, the package allows to fit three types of encoding models:
+1. a Poisson GLM using maximum liklihood fitting to specifically model spike train responses to stimuli
+2. an L2-regularized linear regression model (Ridge) - with the option of using raised cosine basis functions to fit 1D filters - using the Scipy framework. The regularization coefficient of ridge regression can be optimized by using 5-fold cross-validation.
+3. Convolutional neural networks (CNN) using Keras and Tensorflow framework. The CNN consists of an input layer, several hidden layers (convolutional layer, pooling layer, or fully-connected layer) and the output layer. The Scikit-learn python machine learning library can be used to tune the hyperparameters of the Keras CNN model.
 
 **Installation:**
 -
@@ -49,7 +48,7 @@ Anyone can use this package within the google colab environment. Below you will 
 | Tutorial 6: Find stim filter weights for behavior and make predictions to novel stimuli using convolutional neural networks with Keras and Tensorflow | [![View the notebook](https://img.shields.io/badge/render-nbviewer-orange.svg)](https://nbviewer.jupyter.org/github/neuroGLM/master/HowTo_fit_filters.ipynb?flush_cache=true) | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Foxy1987/neuroGLM/blob/master/HowTo_fit_filters.ipynb) |
 
 **Credits:**
-
+All by me, David Fox
 **License:**
 
 
