@@ -1,6 +1,9 @@
 # neuro and behavior encoding models
 
-This package fits encoding models to data relating to measurements of neural spike trains and fly olfactory navigation behavior data. It is used to understand what temporal features of inputs are being encoded by an output. Once a model has been fit, it can be used to predict how a biological neuron or a fly will behave to stimuli they have not seen before.
+This package implements a variety of supervised learning algorithms for building encoding models. Supervised learning is where you have input variables (X) and an output variable (y) and you use an algorithm to learn the mapping function from the input to the output.
+Here we are learning the mapping from various olfactory stimuli to neural spike trains or fly olfactory navigation behavior data. 
+
+Basically we can learn what temporal features of inputs are being encoded by an output. Once a model has been fit, it can be used to predict how a biological neuron or a fly will behave to stimuli they have not seen before.
 
 
 **Description:**
