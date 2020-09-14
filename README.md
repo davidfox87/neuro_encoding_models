@@ -52,6 +52,7 @@ Anyone can use this package within the google colab environment. Below you will 
 
 **Credits:**
 All by me, David Fox
+
 **License:**
 
 
