@@ -5,6 +5,14 @@ from matplotlib import pyplot as plt
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 from glmtools.make_xdsgn import DesignMatrix
+from scipy import stats, signal
+from scipy import interpolate
+
+def normalize(data):
+    data_mean = data.mean(axis=0)
+    data_std = data.std(axis=0)
+    return (data - data_mean) / data_std
+
 
 
 def ridge_fit(Xtrain, ytrain, Xtest, ytest, alphavals):
@@ -175,3 +183,52 @@ def x_proj(wts, x, y):
 
 	return mean_squared_error(y, xproj)
 
+
+
+def sameconv(x, f):
+	x = np.asarray([x.T])
+	f = np.asarray([f.T])
+	[xwid, nx] = x.shape
+	[fwid, nf] = f.shape
+	a = np.concatenate((np.zeros(nf - 1), x), axis=None)
+	b = np.rot90(f, k=2)
+	res = signal.convolve2d(np.asarray([a]), b, mode='valid')
+	return res.squeeze()
+
+
+def fit_nlin_hist1d(stim, response, filt, dt, nfbins):
+	"""
+	Compute histogram-based estimate for piece-wise constant
+	nonlinearity by binning filter output and computing, for
+	each bin, the mean spike rate
+	:param stim: stimulus
+	:param response: response vector
+	:param filt: stimulus filter
+	:param dt: sample interval
+	:param nbins: number of bins
+	:return:
+	"""
+
+	# Filter stimulus with model filter
+	rawfilteroutput = sameconv(stim, filt)
+
+	# bin the filtered stimulus into nbins
+	counts, bin_edges = np.histogram(rawfilteroutput, bins=nfbins)
+
+	# Return the indices of the bins to which each value in input array belongs.
+	inds = np.digitize(rawfilteroutput, bin_edges)
+
+	# use the centers of the bins
+	fx = 0.5*(bin_edges[1:]+bin_edges[:-1])
+
+	fy = np.zeros(nfbins)
+	for i in range(nfbins):
+		fy[i] = np.nanmean(response[inds == i+1])
+
+	fnlin = lambda x: np.interp(x, fx, fy)
+
+	xx = np.linspace(bin_edges[0], bin_edges[-1], 100)
+
+	#plt.plot(xx, fnlin(xx), linewidth=2)
+
+	return xx, fnlin, rawfilteroutput

@@ -2,7 +2,7 @@ import numpy as np
 from scipy.linalg import toeplitz, hankel
 from scipy import stats, signal
 from basisFactory.bases import Basis, RaisedCosine
-
+from tqdm import tqdm
 
 
 class Regressor:
@@ -104,7 +104,7 @@ class RegressorContinuous(Regressor):
 
 		if self.basis:
 			paddedstim2 = np.hstack((np.zeros(1), stim))
-			print("convolving padded stimulus with raised cosine basis functions")
+			#print("convolving padded stimulus with raised cosine basis functions")
 			# convolve stimulus with bases functions
 			Xdsgn2 = self.conv_basis(paddedstim2, self.basis.B)
 			Xdsgn2 = Xdsgn2[:-1, :]
@@ -135,7 +135,7 @@ class RegressorSphist(Regressor):
 		stim = params[self.name + "_val"]
 
 		if self.basis:
-			print("convolving padded stimulus with raised cosine basis functions")
+			#print("convolving padded stimulus with raised cosine basis functions")
 			# convolve stimulus with bases functions
 			Xdsgn2 = self.spikefilt(stim, self.basis.B)
 		else:
@@ -316,7 +316,7 @@ class DesignSpec:
 		Xfull = dm.empty_matrix()
 		Yfull = np.asarray([])
 
-		for tr in self._trialinds:
+		for tr in tqdm(self._trialinds):
 			# nT = np.ceil(expt.duration / expt.dtSp)
 
 			# build param dict to pass to dm.buildMatrix(), which contains time that regressor cares about
@@ -329,7 +329,7 @@ class DesignSpec:
 				name = kregressor.name
 				stim = self.expt.trial[name][:, tr]
 
-				print('forming design matrix from trial indices')
+				# print('forming design matrix from trial indices')
 				# binned_spikes = dm.bin_spikes(self.expt.trial['sptrain'][tr])
 				d[name + '_time'] = 0  # this time could be used to fetch that part of the stimulus but not really used right now
 				d[name + '_val'] = stim

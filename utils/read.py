@@ -28,18 +28,23 @@ def load_spk_times(stim_, response, start, finish):
 
 	return stim, sps
 
-def load_behavior(data, start, finish, param):
-	Fs = 50											# sample rate (Hz)
+
+def load_behavior(data, start, finish, param, fs):
 	dat = io.loadmat(data)
 	dat_ = dat['flyData'][param]
 	response = dat_[0][0]
-	# response = response[int(start * Fs):int(finish * Fs), :]
+	response = response[int(start * fs):int(finish * fs), :]
 
 	imputer = KNNImputer(n_neighbors=2, weights="uniform") # replace nans with an average of the last 2 data points
 	response = imputer.fit_transform(response)
 
-	stim = dat['flyData']['stim']
-	stim = stim[0][0]
-	# stim = stim[int(start * Fs):int(finish * Fs), :]
+	if fs != 50:
+		stim = dat['flyData']['PN']
+		stim = stim[0][0]
+		stim = stim[int(5 * fs):int(30 * fs), :]
+	else:
+		stim = dat['flyData']['stim']
+		stim = stim[0][0]
+		stim = stim[int(start * fs):int(finish * fs), :]
 
 	return stim, response
