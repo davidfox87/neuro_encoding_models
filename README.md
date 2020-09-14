@@ -30,6 +30,8 @@ To install the modules, all you have to do is the following:
 3. Scipy version 1.5.1 or above
 4. Matplotlib version 3.3 or above
 5. Scikit-learn version 0.23.1 or above
+6. Keras 2.4.3
+7. Tensorflow 2.3.0
 
 **Usage:**
 -
