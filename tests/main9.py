@@ -13,10 +13,10 @@ from sklearn.metrics import r2_score
 if __name__ == "__main__":
 
 	# name of behavior for which we want to extract the temporal stim filter
-	behavior_par = "vymoves"
+	behavior_par = "vmoves"
 
 	# load behavior from MATLAB .mat file
-	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par)
+	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
 
 	stim = normalize(stim)
 	# make an Experiment object

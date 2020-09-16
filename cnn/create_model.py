@@ -5,23 +5,25 @@ from keras.layers import MaxPooling1D, Dropout
 from keras.layers import Activation
 from keras.models import Model
 from keras.optimizers import SGD
-from keras.regularizers import l2
+from keras.regularizers import l1, l2
 # custom R2-score metrics for keras backend
 from keras import backend as K
+from keras.constraints import maxnorm
 
 
 # coefficient of determination (R^2) for regression  (only for Keras tensors)
 def r_square(y_true, y_pred):
-	SS_res =  K.sum(K.square(y_true - y_pred))
+	SS_res = K.sum(K.square(y_true - y_pred))
 	SS_tot = K.sum(K.square(y_true - K.mean(y_true)))
-	return ( 1 - SS_res/(SS_tot + K.epsilon()) )
+	return (1 - SS_res / (SS_tot + K.epsilon()))
 
 
-def load_model(input_shape, trained=False, weight_path=''):
+def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=64, weight_constraint=2, dropout_rate=0.2,
+			   kernel_size=749):
 	inputs = Input(shape=input_shape)
-	x = Conv1D(64, kernel_size=749, activation='relu', name='conv1', kernel_regularizer=l2(0.0000001))(inputs)
+	x = Conv1D(neurons, kernel_size=kernel_size, activation='relu', kernel_regularizer=l2(0.0000001), name='conv1')(inputs)
 	x = MaxPooling1D(name='pool')(x)
-	x = Dropout(0.2)(x)
+	x = Dropout(dropout_rate)(x)
 	x = Flatten(name='flatten')(x)
 	x = Dense(128, activation='relu', name='fc1')(x)
 	x = Dense(1, name='fc2')(x)
@@ -37,4 +39,3 @@ def load_model(input_shape, trained=False, weight_path=''):
 
 	model.compile(optimizer='adam', loss='mse', metrics=[r_square, 'mse'])
 	return model
-

@@ -21,14 +21,14 @@ if __name__ == "__main__":
 	behavior_par = "vymoves"
 	fs = 100
 	# load behavior from MATLAB .mat file
-	#stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, fs)
+	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
 	#stim, response = io.load_behavior('../datasets/behavior/u13AKD_behavior.mat', 30., 55., behavior_par, fs)
-	stim, response = io.load_behavior('../datasets/behavior/control_PN_to_behavior.mat', 30., 55., behavior_par, fs)
+	# stim, response = io.load_behavior('../datasets/behavior/control_PN_to_behavior.mat', 30., 55., behavior_par, fs)
 	# stim, response = io.load_behavior('../datasets/behavior/u13AKD_PN_to_behavior.mat', 30., 55., behavior_par, fs)
 
 	# make an Experiment object
-	# expt = Experiment(0.02, 25, stim=stim, response=response)
-	expt = Experiment(0.01, 25, stim=stim, response=response)
+	expt = Experiment(0.02, 25, stim=stim, response=response)
+	#expt = Experiment(0.01, 25, stim=stim, response=response)
 
 	# register continuous regressor
 	expt.registerContinuous('stim')
@@ -82,9 +82,9 @@ if __name__ == "__main__":
 	nmaplt.plot_spike_filter(ax1, w[1:], dspec.dt, linewidth=6)
 	ax1.set_xlim(-2, 0)
 
-	fs = 100
+	fs = 50
 	stim_ = stim[:, 0]
-	response_ = np.reshape(response, (25*fs, -1)).mean(axis=1)
+	response_ = response.mean(axis=1)
 
 	xx, fnlin, rawfilteroutput = fit_nlin_hist1d(stim_, response_, w[1:], dspec.dt, 100)
 
