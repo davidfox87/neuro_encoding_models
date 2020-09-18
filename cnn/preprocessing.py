@@ -2,87 +2,128 @@ import numpy as np
 from scipy.linalg import hankel
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import train_test_split
+import pandas as pd
+
+
+def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
+    """
+    Frame a time series as a supervised learning dataset.
+    Arguments:
+        data: Sequence of observations as a list or NumPy array.
+        n_in: Number of lag observations as input (X).
+        n_out: Number of observations as output (y).
+        dropnan: Boolean whether or not to drop rows with NaN values.
+    Returns:
+        Pandas DataFrame of series framed for supervised learning.
+    """
+    n_vars = 1 if type(data) is list else data.shape[1]
+    df = pd.DataFrame(data)
+    cols, names = list(), list()
+    # input sequence (t-n, ... t-1)
+    for i in range(n_in, 0, -1):
+        cols.append(df.shift(i))
+        names += [('var%d(t-%d)' % (j+1, i)) for j in range(n_vars)]
+    # forecast sequence (t, t+1, ... t+n)
+    for i in range(0, n_out):
+        cols.append(df.shift(-i))
+        if i == 0:
+            names += [('var%d(t)' % (j+1)) for j in range(n_vars)]
+        else:
+            names += [('var%d(t+%d)' % (j+1, i)) for j in range(n_vars)]
+    # put it all together
+    agg = pd.concat(cols, axis=1)
+    agg.columns = names
+    # drop rows with NaN values
+    if dropnan:
+        agg = agg.fillna(0)
+        # agg.dropna(inplace=True)
+    return agg
+
 
 
 def timeseries_from_dataset(stim, bins_before):
-	paddedstim2 = np.hstack((np.zeros(bins_before - 1), stim.squeeze()))
-	return hankel(paddedstim2[:(-bins_before + 1)], paddedstim2[(-bins_before):]) # needs to be paddedstim because keras model expects inputs to be the same size
+    paddedstim2 = np.hstack((np.zeros(bins_before - 1), stim.squeeze()))
+    return hankel(paddedstim2[:(-bins_before + 1)], paddedstim2[(-bins_before):]) # needs to be paddedstim because keras model expects inputs to be the same size
 
 def preprocess_resp(resp):
-	"""
-	preprocess the responses
+    """
+    preprocess the responses
 
-	"""
-	# we could also scale with scikit-learn
+    """
+    # we could also scale with scikit-learn
 
-	# scaler = MinMaxScaler(feature_range=[0, 1])
-	# response = scaler.fit_transform(response)
-	# trial-average
-	# each fly is a trial-average
-	# (n_t, n_flies)
+    # scaler = MinMaxScaler(feature_range=[0, 1])
+    # response = scaler.fit_transform(response)
+    # trial-average
+    # each fly is a trial-average
+    # (n_t, n_flies)
 
-	# resp = resp.reshape((-1, 1))
-	#
-	# # scaling to [0,1]
-	# for i in range(resp.shape[1]):
-	# 	_resp = resp[:, i]
-	# 	if np.max(_resp) == np.min(_resp):
-	# 		resp[:, i] = np.zeros(len(_resp))
-	# 	else:
-	# 		resp[:, i] = (_resp - np.min(_resp)) / (np.max(_resp) - np.min(_resp))
-	#
-	# # reshape for Keras
-	# return resp.reshape((resp.shape[0], resp.shape[1], 1))
+    # resp = resp.reshape((-1, 1))
+    #
+    # # scaling to [0,1]
+    # for i in range(resp.shape[1]):
+    # 	_resp = resp[:, i]
+    # 	if np.max(_resp) == np.min(_resp):
+    # 		resp[:, i] = np.zeros(len(_resp))
+    # 	else:
+    # 		resp[:, i] = (_resp - np.min(_resp)) / (np.max(_resp) - np.min(_resp))
+    #
+    # # reshape for Keras
+    # return resp.reshape((resp.shape[0], resp.shape[1], 1))
 
 
 
-	# scaling to [0,1]
-	resp = resp.reshape((-1, 1))
+    # scaling to [0,1]
+    resp = resp.reshape((-1, 1))
 
-	# scaling to [0,1]
-	for i in range(resp.shape[1]):
-		_resp = resp[:, i]
-		if np.max(_resp) == np.min(_resp):
-			resp[:, i] = np.zeros(len(_resp))
-		else:
-			resp[:, i] = (_resp - np.min(_resp)) / (np.max(_resp) - np.min(_resp))
+    # scaling to [0,1]
+    for i in range(resp.shape[1]):
+        _resp = resp[:, i]
+        if np.max(_resp) == np.min(_resp):
+            resp[:, i] = np.zeros(len(_resp))
+        else:
+            resp[:, i] = (_resp - np.min(_resp)) / (np.max(_resp) - np.min(_resp))
 
-	return resp
+    return resp
 
 def preprocess_stim(stim, input_shape=None):
-	"""
-	preprocess the stim to have zero-mean and unit-variance
-	"""
+    """
+    preprocess the stim to have zero-mean and unit-variance
+    """
 
-	# scaler = StandardScaler()
-	# stim = scaler.fit_transform(stim)
-	#
-	# x = timeseries_from_dataset(stim, input_shape[0])
-	#
-	# # reshape for Keras in [samples, timesteps, features]
-	# return x.reshape((x.shape[0], x.shape[1], 1))
+    # scaler = StandardScaler()
+    # stim = scaler.fit_transform(stim)
+    #
+    # x = timeseries_from_dataset(stim, input_shape[0])
+    #
+    # # reshape for Keras in [samples, timesteps, features]
+    # return x.reshape((x.shape[0], x.shape[1], 1))
 
-	# scaler = StandardScaler()
-	# stim = scaler.fit_transform(stim)
-	# return stim
-	stim = stim.reshape(-1, 1)
-	scaler = StandardScaler()
-	stim = scaler.fit_transform(stim)
+    # scaler = StandardScaler()
+    # stim = scaler.fit_transform(stim)
+    # return stim
+    stim = stim.reshape(-1, 1)
+    scaler = StandardScaler()
+    stim = scaler.fit_transform(stim)
 
-	x = timeseries_from_dataset(stim, input_shape[0])
-
-	# keras expects the time series as [samples, timesteps, features]
-	return x.reshape((x.shape[0], x.shape[1], 1))
+    # x = timeseries_from_dataset(stim, input_shape[0])
+    x = series_to_supervised(stim.reshape(-1, 1), n_in=input_shape[0]-1, n_out=1)
+    x = x.values
+    # keras expects the time series as [samples, timesteps, features]
+    return x.reshape((x.shape[0], x.shape[1], 1))
 
 
 
 def preprocess(stim, response, input_shape=None):
-	stim_train, stim_test, resp_train, resp_test = train_test_split(stim, response,
-																	test_size=0.2, shuffle=False, random_state=42)
-	stim_train, stim_test = preprocess_stim(stim_train, input_shape=input_shape), preprocess_stim(stim_test, input_shape=input_shape)
-	resp_train, resp_test = preprocess_resp(resp_train), preprocess_resp(resp_test)
-	return stim_train, stim_test, resp_train, resp_test
+    # stim_train, stim_test, resp_train, resp_test = train_test_split(stim, response,
+    # 																test_size=0.2, shuffle=False, random_state=42)
+    # stim_train, stim_test = preprocess_stim(stim_train, input_shape=input_shape), preprocess_stim(stim_test, input_shape=input_shape)
+    # resp_train, resp_test = preprocess_resp(resp_train), preprocess_resp(resp_test)
+    # return stim_train, stim_test, resp_train, resp_test
 
-	# stim = preprocess_stim(stim, input_shape=input_shape)
-	# resp = preprocess_resp(response)
-	# return stim, resp
+    stim = preprocess_stim(stim, input_shape=input_shape)
+    resp = preprocess_resp(response)
+    stim_train, stim_test, resp_train, resp_test = train_test_split(stim, resp,
+                                                                    test_size=0.05, shuffle=False, random_state=42)
+
+    return stim_train, stim_test, resp_train, resp_test

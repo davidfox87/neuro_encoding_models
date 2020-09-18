@@ -18,6 +18,7 @@ from keras.wrappers.scikit_learn import KerasRegressor
 from cnn.create_model import r_square
 import cnn.create_model
 from keras.models import load_model
+import pandas as pd
 
 
 """
@@ -29,7 +30,7 @@ if __name__ == "__main__":
 
 	# CNN hyperparameters
 	batch_size = 64
-	epochs = 60
+	epochs = 200
 	input_shape = [750, 1]
 	print_summary = False
 
@@ -53,6 +54,12 @@ if __name__ == "__main__":
 	stim = stim[:, 0]
 	# preprocess for the CNN to work. This is a VERY important step!
 	stim_train, stim_test, resp_train, resp_test = preprocess(stim, response, input_shape)
+
+	# show stim train and stim test
+	# plot original stimulus in top subplot
+	# do implot for train in bottom left and implot for test in bottom right
+
+
 
 	# construct the CNN model
 	model = cnn.create_model.load_model(input_shape)
@@ -90,16 +97,31 @@ if __name__ == "__main__":
 
 	fig, ax = plt.subplots()
 	cnn.utils.plot_weights(ax, saved_model, 0.02, linewidth=4, color='k')
-	ax.set_xlim(-4, 0)
+	ax.set_xlim(-5, 0)
 
 
-	# keras expects the time series as [samples, timesteps, features]
-	# X = cnn.preprocessing.preprocess_stim(stim, input_shape)
-	# resp = cnn.preprocessing.preprocess_resp(response)
 	# predict and evaluate
-	_pred = saved_model.predict(stim_train)
-	plt.plot(resp_train)
-	plt.plot(_pred)
+	nt_train, nt = len(stim_train), len(stim)
+	time_train = np.arange(nt_train) * 0.02
+	time_test = np.arange(nt_train, nt) * 0.02
+
+	plt.figure()
+	_pred_train = saved_model.predict(stim_train)
+	_pred_test = saved_model.predict(stim_test)
+	plt.plot(time_train, resp_train.squeeze())
+	plt.plot(time_test, resp_test.squeeze())
+	plt.plot(time_train, _pred_train)
+	plt.plot(time_test, _pred_test)
+
+	plt.figure()
+	# plot training curve for rmse
+	plt.plot(history.history['mse'])
+	plt.plot(history.history['val_mse'])
+	plt.title('mse')
+	plt.ylabel('mse')
+	plt.xlabel('epoch')
+	plt.legend(['train', 'test'], loc='upper left')
+	plt.show()
 	# #
 	# #
 	# # #
@@ -184,24 +206,8 @@ if __name__ == "__main__":
 	# _pred_train = model.predict(X).T[0]
 	# plt.plot(_pred_train)
 	#
-	# plt.figure()
-	# plt.plot(history.history['val_r_square'])
-	# plt.plot(history.history['r_square'])
-	# plt.title('model R^2')
-	# plt.ylabel('R^2')
-	# plt.xlabel('epoch')
-	# plt.legend(['train', 'test'], loc='upper left')
-	# plt.show()
 	#
-	# plt.figure()
-	# # plot training curve for rmse
-	# plt.plot(history.history['mse'])
-	# plt.plot(history.history['val_mse'])
-	# plt.title('mse')
-	# plt.ylabel('mse')
-	# plt.xlabel('epoch')
-	# plt.legend(['train', 'test'], loc='upper left')
-	# plt.show()
+
 	#
 	# # print the linear regression and display datapoints
 	# y_pred = model.predict(x_test).T[0]

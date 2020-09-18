@@ -71,9 +71,12 @@ if __name__ == "__main__":
 	alpha_ = ridgefitCV(folds_train, folds_test, lamvals)
 
 	# try excluding trials where fly doesn't do anything...there is one where it os mostly standing still
-	# model = Ridge(alpha=13479003).fit(X, y)
 
+
+	# fit model on 80% train data
 	model = Ridge(alpha=alpha_).fit(X, y)
+
+	# test on 20% test data and then compare test mse with CNN test mse
 
 	# Get the coefs of the model fit using cross-validation
 	w = model.coef_

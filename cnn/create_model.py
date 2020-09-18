@@ -1,7 +1,7 @@
 from keras.layers import Dense, Input
 from keras.layers import Flatten
 from keras.layers import Conv1D
-from keras.layers import MaxPooling1D, Dropout
+from keras.layers import GlobalMaxPooling1D, MaxPooling1D, Dropout
 from keras.layers import Activation
 from keras.models import Model
 from keras.optimizers import SGD
@@ -18,14 +18,15 @@ def r_square(y_true, y_pred):
 	return (1 - SS_res / (SS_tot + K.epsilon()))
 
 
-def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=64, weight_constraint=2, dropout_rate=0.2,
+def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=32, weight_constraint=1, dropout_rate=0.2,
 			   kernel_size=749):
 	inputs = Input(shape=input_shape)
-	x = Conv1D(neurons, kernel_size=kernel_size, activation='relu', kernel_regularizer=l2(0.0000001), name='conv1')(inputs)
+	x = Conv1D(64, kernel_size=749, activation='relu',
+			   name='conv1')(inputs)
 	x = MaxPooling1D(name='pool')(x)
 	x = Dropout(dropout_rate)(x)
 	x = Flatten(name='flatten')(x)
-	x = Dense(128, activation='relu', name='fc1')(x)
+	x = Dense(256, activation='relu', name='fc1')(x)
 	x = Dense(1, name='fc2')(x)
 	predictions = Activation('linear')(x)
 	#predictions = Activation('sigmoid')(x)
