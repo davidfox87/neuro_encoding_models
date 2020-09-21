@@ -18,7 +18,7 @@ def r_square(y_true, y_pred):
 	return (1 - SS_res / (SS_tot + K.epsilon()))
 
 
-def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=32, weight_constraint=1, dropout_rate=0.2,
+def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=32, weight_constraint=1, dropout_rate=0.4,
 			   kernel_size=749):
 	inputs = Input(shape=input_shape)
 	x = Conv1D(64, kernel_size=749, activation='relu',
@@ -40,3 +40,4 @@ def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=32, 
 
 	model.compile(optimizer='adam', loss='mse', metrics=[r_square, 'mse'])
 	return model
+

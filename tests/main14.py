@@ -19,7 +19,11 @@ from cnn.create_model import r_square
 import cnn.create_model
 from keras.models import load_model
 import pandas as pd
+from sklearn.linear_model import RidgeCV, Ridge
 
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from sklearn import metrics
+from sklearn.metrics import mean_squared_error
 
 """
 this is a script to run a CNN on fly-averaged behavior time series
@@ -46,7 +50,7 @@ if __name__ == "__main__":
 
 	# specify behavior to make a prediction for
 	behaviors = ["angvturns", "vmoves", "vymoves"]
-	behavior_par = behaviors[1]
+	behavior_par = behaviors[0]
 
 	# load the data from MATLAB .mat file
 	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
@@ -58,8 +62,15 @@ if __name__ == "__main__":
 	# show stim train and stim test
 	# plot original stimulus in top subplot
 	# do implot for train in bottom left and implot for test in bottom right
+	fig = plt.figure(constrained_layout=True)
+	spec = fig.add_gridspec(ncols=1, nrows=2)
 
-
+	# show the stimulus at the top
+	# make gridspec (2, 2)
+	f_ax1 = fig.add_subplot(spec[0, 0])
+	f_ax2 = fig.add_subplot(spec[1, 0])
+	f_ax1.imshow(stim_train)
+	f_ax2.imshow(stim_test)
 
 	# construct the CNN model
 	model = cnn.create_model.load_model(input_shape)
@@ -122,6 +133,37 @@ if __name__ == "__main__":
 	plt.xlabel('epoch')
 	plt.legend(['train', 'test'], loc='upper left')
 	plt.show()
+
+
+	# compare CNN with ridge regression first on the mean trace. We will deal with multiple flis later
+	stim_train, stim_test = stim_train.squeeze(), stim_test.squeeze()
+	model = Ridge()
+	alphas = np.logspace(0, 30, num=20, base=2)
+	param_search = [{'alpha': alphas}]
+
+	tscv = TimeSeriesSplit(n_splits=5)
+	grid_result = GridSearchCV(estimator=model, cv=tscv,
+                        param_grid=param_search, scoring='neg_mean_squared_error')
+	grid_result.fit(stim_train, resp_train)
+	print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+
+	# using this ridge penalty value, get the mse between resp_test and ridge prediction
+	model = Ridge(alpha=grid_result.best_params_['alpha']).fit(stim_train, resp_train)
+	print("Ridge mse on held out test set is: ", mean_squared_error(resp_test, model.predict(stim_test)))
+	print("CNN mse on held out test set is: ", test_accuracy[1])
+
+
+	w = model.coef_[0]
+	d = len(w)
+	t = np.arange(-d + 1, 1) * 0.02
+
+	# compare ridge and CNN filters
+	fig, ax = plt.subplots()
+	cnn.utils.plot_weights(ax, saved_model, 0.02, linewidth=4, color='k')
+	ax.set_xlim(-5, 0)
+
+	ax.plot(t, w, 'b')
+
 	# #
 	# #
 	# # #
@@ -230,12 +272,3 @@ if __name__ == "__main__":
 	#
 	# K.clear_session()
 	#
-	#
-	# # code to measure performance of CNN using K-fold cross-validation
-	# # estimators = []
-	# # # estimators.append(('standardize', StandardScaler()))
-	# # estimators.append(('mlp', KerasClassifier(build_fn=create_model, epochs=20, batch_size=256, verbose=1)))
-	# # pipeline = Pipeline(estimators)
-	# # kfold = KFold(n_splits=5, shuffle=False)
-	# # results = cross_val_score(pipeline, x, y, cv=kfold, scoring='r2')
-	# # print("Visible: %.5f (%.5f)" % (results.mean(), results.std()))

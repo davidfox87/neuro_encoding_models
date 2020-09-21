@@ -12,6 +12,8 @@ import cnn.utils
 from cnn.create_model import load_model
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import TimeSeriesSplit
+
 
 """
 This script performs gridsearch CV to find the best parameters of a 
@@ -38,29 +40,16 @@ if __name__ == "__main__":
 		os.makedirs(dirs['save'] + 'weights')
 
 
-	# specify behavior to make a prediction for
 	behaviors = ["angvturns", "vmoves", "vymoves"]
-	behavior_par = behaviors[1]
+	behavior_par = behaviors[0]
 
 	# load the data from MATLAB .mat file
 	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
-
+	response = response.mean(axis=1)  # work on the fly-average
+	stim = stim[:, 0]
 	# preprocess for the CNN to work. This is a VERY important step!
-	stim, response = preprocess(stim, response)
+	stim_train, stim_test, resp_train, resp_test = preprocess(stim, response, input_shape)
 
-	# Get zero-padded vectorized time series of dimension [samples, timesteps]
-	expt = Experiment(0.02, 25, stim=stim, response=response)
-	expt.registerContinuous('stim')
-
-	# initialize design spec with one trial
-	trial_inds = list(range(response.shape[1]))
-	dspec = DesignSpec(expt, trial_inds)
-
-	dspec.addRegressorContinuous()
-	dm, X, y = dspec.compileDesignMatrixFromTrialIndices()
-
-	# split into training and test set
-	x = X.reshape((X.shape[0], X.shape[1], 1))
 
 	model = KerasRegressor(build_fn=load_model, epochs=100, batch_size=64, verbose=1)
 
@@ -69,11 +58,14 @@ if __name__ == "__main__":
 	dropout_rate = [0, .1, .2, .3, .4, .5]
 	neurons = [1, 2, 4, 8, 16, 32, 64]
 	kernel_size = [250, 450, 550, 650, 749]
-	#param_grid = dict(dropout_rate=dropout_rate, weight_constraint=weight_constraint)
-	param_grid = dict(weight_constraint=weight_constraint, dropout_rate=dropout_rate)
 
-	grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1, cv=5)
+	param_grid = dict(dropout_rate=dropout_rate)
 
-	grid_result = grid.fit(x, y)
+	# for a single time series we want to test our model on time points in the future
+	# https: // scikit - learn.org / stable / modules / cross_validation.html
+	tscv = TimeSeriesSplit(n_splits=5)
+	grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1, cv=tscv)
+
+	grid_result = grid.fit(stim_train, resp_train)
 
 	print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
