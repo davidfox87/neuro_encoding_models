@@ -86,44 +86,43 @@ def preprocess_resp(resp):
 
     return resp
 
-def preprocess_stim(stim, input_shape=None):
-    """
-    preprocess the stim to have zero-mean and unit-variance
-    """
+def preprocess_stim(stim_train, stim_test, input_shape=None):
+	"""
+	preprocess the stim to have zero-mean and unit-variance
+	"""
 
-    # scaler = StandardScaler()
-    # stim = scaler.fit_transform(stim)
-    #
-    # x = timeseries_from_dataset(stim, input_shape[0])
-    #
-    # # reshape for Keras in [samples, timesteps, features]
-    # return x.reshape((x.shape[0], x.shape[1], 1))
+	# scaler = StandardScaler()
+	# stim = scaler.fit_transform(stim)
+	#
+	# x = timeseries_from_dataset(stim, input_shape[0])
+	#
+	# # reshape for Keras in [samples, timesteps, features]
+	# return x.reshape((x.shape[0], x.shape[1], 1))
 
-    # scaler = StandardScaler()
-    # stim = scaler.fit_transform(stim)
-    # return stim
-    stim = stim.reshape(-1, 1)
-    scaler = StandardScaler()
-    stim = scaler.fit_transform(stim)
+	# scaler = StandardScaler()
+	# stim = scaler.fit_transform(stim)
+	# return stim
+	#stim_train = stim_train.reshape(-1, 1)
+	scalar = StandardScaler()
+	scalar.fit(stim_train)
+	stim_train = scalar.transform(stim_train)
+	stim_test = scalar.transform(stim_test)
 
-    # x = timeseries_from_dataset(stim, input_shape[0])
-    x = series_to_supervised(stim.reshape(-1, 1), n_in=input_shape[0]-1, n_out=1)
-    x = x.values
-    # keras expects the time series as [samples, timesteps, features]
-    return x.reshape((x.shape[0], x.shape[1], 1))
-
+	return stim_train, stim_test
 
 
 def preprocess(stim, response, input_shape=None):
-    # stim_train, stim_test, resp_train, resp_test = train_test_split(stim, response,
-    # 																test_size=0.2, shuffle=False, random_state=42)
-    # stim_train, stim_test = preprocess_stim(stim_train, input_shape=input_shape), preprocess_stim(stim_test, input_shape=input_shape)
-    # resp_train, resp_test = preprocess_resp(resp_train), preprocess_resp(resp_test)
-    # return stim_train, stim_test, resp_train, resp_test
 
-    stim = preprocess_stim(stim, input_shape=input_shape)
-    resp = preprocess_resp(response)
-    stim_train, stim_test, resp_train, resp_test = train_test_split(stim, resp,
-                                                                    test_size=0.05, shuffle=False, random_state=42)
+	stim = series_to_supervised(stim.reshape(-1, 1), n_in=input_shape[0] - 1, n_out=1)
+	stim = stim.values
 
-    return stim_train, stim_test, resp_train, resp_test
+	resp = preprocess_resp(response)
+	stim_train, stim_test, resp_train, resp_test = train_test_split(stim, resp,
+                                                                    test_size=0.1, shuffle=False, random_state=42)
+	stim_train, stim_test = preprocess_stim(stim_train, stim_test, input_shape=input_shape)
+
+	# keras expects the time series as [samples, timesteps, features]
+	stim_train= stim_train.reshape((stim_train.shape[0], stim_train.shape[1], 1))
+	stim_test = stim_test.reshape((stim_test.shape[0], stim_test.shape[1], 1))
+
+	return stim_train, stim_test, resp_train, resp_test

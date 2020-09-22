@@ -27,7 +27,7 @@ if __name__ == "__main__":
 	# CNN hyperparameters
 	batch_size = 64
 	epochs = 100
-	input_shape = [750, 1]
+	input_shape = [850, 1]
 	print_summary = False
 
 	# dir
@@ -41,7 +41,7 @@ if __name__ == "__main__":
 
 
 	behaviors = ["angvturns", "vmoves", "vymoves"]
-	behavior_par = behaviors[0]
+	behavior_par = behaviors[2]
 
 	# load the data from MATLAB .mat file
 	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
@@ -56,16 +56,22 @@ if __name__ == "__main__":
 	# define the grid search parameters
 	weight_constraint = [1, 2, 3, 4, 5]
 	dropout_rate = [0, .1, .2, .3, .4, .5]
-	neurons = [1, 2, 4, 8, 16, 32, 64]
-	kernel_size = [250, 450, 550, 650, 749]
+	neurons = [16, 32, 64]
+	kernel_size = [749, 849]
 
-	param_grid = dict(dropout_rate=dropout_rate)
-
+	param_grid = dict(dropout_rate=dropout_rate, neurons=neurons)
+	#param_grid = dict(kernel_size=kernel_size)
 	# for a single time series we want to test our model on time points in the future
 	# https: // scikit - learn.org / stable / modules / cross_validation.html
 	tscv = TimeSeriesSplit(n_splits=5)
-	grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1, cv=tscv)
+	grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1, cv=tscv, scoring='neg_mean_squared_error')
 
 	grid_result = grid.fit(stim_train, resp_train)
 
 	print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+
+	means = grid_result.cv_results_['mean_test_score']
+	stds = grid_result.cv_results_['std_test_score']
+	params = grid_result.cv_results_['params']
+	for mean, stdev, param in zip(means, stds, params):
+		print("%f (%f) with: %r" % (mean, stdev, param))

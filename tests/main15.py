@@ -24,8 +24,6 @@ from sklearn.linear_model import RidgeCV, Ridge
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn import metrics
 from sklearn.metrics import mean_squared_error
-from glmtools.fit import neg_log_lik, ridgefitCV, fit_nlin_hist1d
-
 
 """
 this is a script to run a CNN on fly-averaged behavior time series
@@ -37,7 +35,7 @@ if __name__ == "__main__":
 	# CNN hyperparameters
 	batch_size = 64
 	epochs = 200
-	input_shape = [850, 1]
+	input_shape = [750, 1]
 	print_summary = False
 
 	# dir
@@ -75,13 +73,7 @@ if __name__ == "__main__":
 	f_ax2.imshow(stim_test)
 
 	# construct the CNN model
-	# load model with pretrained weights if already trained
-	filepath = None
-	if filepath is None:
-		model = cnn.create_model.load_model(input_shape)
-	else:
-		model = cnn.create_model.load_model(input_shape, trained=True, weight_path=filepath)
-
+	model = cnn.create_model.load_model(input_shape)
 	if print_summary:
 		model.summary()
 		plot_model(model, dirs['save'] + 'model.png', show_shapes=True)
@@ -158,13 +150,6 @@ if __name__ == "__main__":
 	# using this ridge penalty value, get the mse between resp_test and ridge prediction
 	model = Ridge(alpha=grid_result.best_params_['alpha']).fit(stim_train, resp_train)
 
-
-
-
-
-
-	# the mse has to be evaluated not on the held out test set but on the entire prediction
-	# and the actual measurement
 	print("Ridge mse on train test set is: ", mean_squared_error(resp_train, model.predict(stim_train)))
 	print("Ridge mse on held out test set is: ", mean_squared_error(resp_test, model.predict(stim_test)))
 
@@ -179,124 +164,8 @@ if __name__ == "__main__":
 	# compare ridge and CNN filters
 	fig, ax = plt.subplots()
 	cnn.utils.plot_weights(ax, saved_model, 0.02, linewidth=4, color='k')
-	ax.set_xlim(-5, 0)
+	ax.set_xlim(-10, 0)
 
-	ax.plot(t, w, 'b', linewidth=5)
+	ax.plot(t, w, 'b')
 
-	xx, fnlin, rawfilteroutput = fit_nlin_hist1d(stim, response, w, 0.02, 100)
-
-	# compare with CNN
-	plt.plot(_pred_train)
-	plt.plot(fnlin(rawfilteroutput))
-	# compare with actual
-	plt.plot(response)
-
-	# compare mse
-
-	# #
-	# # #
-	# # # #model = KerasRegressor(build_fn=load_model, epochs=100, batch_size=64, verbose=1)
-	# # # #accuracies = cross_val_score(estimator=model, X=x, y=y, scoring='r2', cv=5, n_jobs=-1)
-	# # # #mean = accuracies.mean()
-	# # # #variance = accuracies.std()
-	# # #
-	# # # # callbacks
-	# # # filepath = dirs['save'] + 'weights/weights_best_' + behavior_par + '.hdf5'
-	# # # checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=0,
-	# # # 							 save_best_only=True, mode='auto')
-	# # #
-	# # # model = load_model(input_shape)
-	# # #
-	# # # # training
-	# # # history = model.fit(X, y,
-	# # # 					batch_size=batch_size,
-	# # # 					epochs=epochs,
-	# # # 					callbacks=[checkpoint],
-	# # # 					verbose=1)
-	# # #
-	# # # # predict and evaluate
-	# # # _pred = model.predict(x)
-	# # # plt.plot(response.mean(axis=1))
-	# # # plt.plot(_pred[:1250])
-	# # #
-	# # #
-	# # #
-	# # # w = model.get_weights()[0][:, 0, :]
-	# # # fig, ax = plt.subplots()
-	# # # nmaplt.plot_spike_filter(ax, w.mean(axis=1), 0.02, linewidth=4, color='k')
-	# # # ax.set_xlim(-5, 0)
-	# # #
-	# # # #
-	# # # #
-	# # # # # construct the CNN model
-	# # # # model = load_model(input_shape)
-	# # # # if print_summary:
-	# # # # 	model.summary()
-	# # # # 	plot_model(model, dirs['save'] + 'model.png', show_shapes=True)
-	# # # #
-	# # # # # callbacks
-	# # # # filepath = dirs['save'] + 'weights/weights_best_' + behavior_par + '.hdf5'
-	# # # # checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=0,
-	# # # # 							 save_best_only=True, mode='auto')
-	# # # # # training
-	# # # # history = model.fit(x_train, y_train,
-	# # # # 					batch_size=batch_size,
-	# # # # 					epochs=epochs,
-	# # # # 					validation_data=(x_test, y_test),
-	# # # # 					callbacks=[checkpoint],
-	# # # # 					verbose=1)
-	# # # #
-	# # # # predict and evaluate
-	# _pred_train = model.predict(x_train)
-	# _pred_test = model.predict(x_test)
-	#
-	# train_accuracy = cnn.utils.evaluator(y_train, _pred_train)
-	# test_accuracy = cnn.utils.evaluator(y_test, _pred_test)
-	# # #
-	# # # pickle.dump(train_accuracy, open(dirs['save'] + behavior_par + '_train_accuracy.pkl', 'wb'), 2)
-	# # # pickle.dump(test_accuracy, open(dirs['save'] + behavior_par + '_test_accuracy.pkl', 'wb'), 2)
-	# # #
-	# # #
-	# #
-	# #
-	# #
-	# #
-	# #
-	# #
-	# # w = model.get_weights()[0][:, 0, :]
-	# # fig, ax = plt.subplots()
-	# # nmaplt.plot_spike_filter(ax, w.mean(axis=1), 0.02, linewidth=4, color='k')
-	# # ax.set_xlim(-5, 0)
-	# #
-	# X = X.reshape((X.shape[0], X.shape[1], 1))
-	# #
-	# # # here we could do some prediction of responses to other stimuli
-	# plt.figure()
-	# plt.plot(response.mean(axis=1))
-	# _pred_train = model.predict(X).T[0]
-	# plt.plot(_pred_train)
-	#
-	#
-
-	#
-	# # print the linear regression and display datapoints
-	# y_pred = model.predict(x_test).T[0]
-	# regressor = LinearRegression()
-	# regressor.fit(y_test.reshape(-1, 1), y_pred.reshape(-1, 1))
-	# y_fit = regressor.predict(y_pred.reshape(-1, 1))
-	#
-	# reg_intercept = round(regressor.intercept_[0], 4)
-	# reg_coef = round(regressor.coef_.flatten()[0], 4)
-	# reg_label = "y = " + str(reg_intercept) + "*x +" + str(reg_coef)
-	#
-	# plt.figure()
-	# plt.scatter(y_test, y_pred, color='blue', label='data')
-	# plt.plot(y_pred, y_fit, color='red', linewidth=2, label='Linear regression\n' + reg_label)
-	# plt.title('Linear Regression')
-	# plt.legend()
-	# plt.xlabel('observed')
-	# plt.ylabel('predicted')
-	# plt.show()
-	#
-	# K.clear_session()
-	#
+	plt.plot(model.predict(stim_train))
