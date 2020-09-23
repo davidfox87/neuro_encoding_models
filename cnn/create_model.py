@@ -18,10 +18,10 @@ def r_square(y_true, y_pred):
 	return (1 - SS_res / (SS_tot + K.epsilon()))
 
 
-def load_model(input_shape=[850, 1], trained=False, weight_path='', neurons=64, weight_constraint=1, dropout_rate=0,
+def load_model(input_shape=[750, 1], trained=False, weight_path='', neurons=16, weight_constraint=1, dropout_rate=0,
 			   kernel_size=749):
 	inputs = Input(shape=input_shape)
-	x = Conv1D(neurons, kernel_size=kernel_size, activation='relu', kernel_regularizer=l2(0.001),
+	x = Conv1D(neurons, kernel_size=kernel_size, activation='relu', kernel_regularizer=l2(0.01),
 			   name='conv1')(inputs)
 	x = Dropout(dropout_rate)(x)
 	x = MaxPooling1D(name='pool')(x)

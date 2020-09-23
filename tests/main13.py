@@ -20,7 +20,7 @@ if __name__ == "__main__":
 	# CNN hyperparameters
 	batch_size = 64
 	epochs = 100
-	input_shape = [850, 1]
+	input_shape = [750, 1]
 	print_summary = False
 
 	# dir
@@ -50,9 +50,8 @@ if __name__ == "__main__":
 	weight_constraint = [1, 2, 3, 4, 5]
 	dropout_rate = [0, .1, .2, .3, .4, .5]
 	neurons = [16, 32, 64]
-	kernel_size = [749, 849]
 
-	param_grid = dict(dropout_rate=dropout_rate, neurons=neurons)
+	param_grid = dict(neurons=neurons)
 	#param_grid = dict(kernel_size=kernel_size)
 	# for a single time series we want to test our model on time points in the future
 	# https: // scikit - learn.org / stable / modules / cross_validation.html
