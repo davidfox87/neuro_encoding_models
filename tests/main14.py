@@ -37,7 +37,7 @@ if __name__ == "__main__":
 	# CNN hyperparameters
 	batch_size = 64
 	epochs = 200
-	input_shape = [850, 1]
+	input_shape = [750, 1]
 	print_summary = False
 
 	# dir
@@ -52,10 +52,12 @@ if __name__ == "__main__":
 
 	# specify behavior to make a prediction for
 	behaviors = ["angvturns", "vmoves", "vymoves"]
-	behavior_par = behaviors[0]
+	behavior_par = behaviors[2]
 
 	# load the data from MATLAB .mat file
-	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
+	#stim, response = io.load_behavior('../datasets/behavior/unc13_stim_to_behavior.mat', 30., 55., behavior_par, 50)
+	stim, response = io.load_behavior('../datasets/behavior/control_stim_to_behavior.mat', 30., 55., behavior_par, 50)
+
 	response = response.mean(axis=1)  # work on the fly-average
 	stim = stim[:, 0]
 	# preprocess for the CNN to work. This is a VERY important step!
@@ -64,15 +66,15 @@ if __name__ == "__main__":
 	# show stim train and stim test
 	# plot original stimulus in top subplot
 	# do implot for train in bottom left and implot for test in bottom right
-	fig = plt.figure(constrained_layout=True)
-	spec = fig.add_gridspec(ncols=1, nrows=2)
-
-	# show the stimulus at the top
-	# make gridspec (2, 2)
-	f_ax1 = fig.add_subplot(spec[0, 0])
-	f_ax2 = fig.add_subplot(spec[1, 0])
-	f_ax1.imshow(stim_train)
-	f_ax2.imshow(stim_test)
+	# fig = plt.figure(constrained_layout=True)
+	# spec = fig.add_gridspec(ncols=1, nrows=2)
+	#
+	# # show the stimulus at the top
+	# # make gridspec (2, 2)
+	# f_ax1 = fig.add_subplot(spec[0, 0])
+	# f_ax2 = fig.add_subplot(spec[1, 0])
+	# f_ax1.imshow(stim_train)
+	# f_ax2.imshow(stim_test)
 
 	# construct the CNN model
 	# load model with pretrained weights if already trained
@@ -186,10 +188,10 @@ if __name__ == "__main__":
 	xx, fnlin, rawfilteroutput = fit_nlin_hist1d(stim, response, w, 0.02, 100)
 
 	# compare with CNN
+	plt.figure()
+	plt.plot(response, linewidth=3)
 	plt.plot(_pred_train)
 	plt.plot(fnlin(rawfilteroutput))
-	# compare with actual
-	plt.plot(response)
 
 	# compare mse
 

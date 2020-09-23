@@ -1,14 +1,7 @@
 import utils.read as io
 import numpy as np
-from matplotlib import pyplot as plt
-from glmtools.make_xdsgn import Experiment, DesignSpec
-from utils import plot as nmaplt
 import os
-import pickle
-
-from sklearn.model_selection import train_test_split
 from cnn.preprocessing import preprocess
-import cnn.utils
 from cnn.create_model import load_model
 from keras.wrappers.scikit_learn import KerasRegressor
 from sklearn.model_selection import GridSearchCV
