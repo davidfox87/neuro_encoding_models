@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
 
 	stim, response = io.load_mean_psth('../datasets/neural/control_stim_to_orn.mat', 'control_orn')
-	fs = 1000
+	fs = 100
 	# consider splitting by 80/20 train/validation and then make a lot of timeseries splits > 10, then test the mse on test
 	stim_train, stim_test, resp_train, resp_test = train_test_split(stim, response,
 	 																test_size=0.001,

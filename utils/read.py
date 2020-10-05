@@ -59,7 +59,7 @@ def load_mean_psth(file, cell):
 	dat = io.loadmat(file)
 
 	fs = 100
-	stim = dat[cell]['stim'][0][0].T
+	stim = dat[cell]['stim'][0][0]
 
 	resp = dat[cell]['response'][0][0]
 	resp = resp[int(5 * fs):int(30 * fs)]
