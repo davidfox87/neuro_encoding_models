@@ -48,3 +48,21 @@ def load_behavior(data, start, finish, param, fs):
 		stim = stim[int(start * fs):int(finish * fs), :]
 
 	return stim, response
+
+def load_mean_psth(file, cell):
+	'''
+
+	:param file: name of the .mat file containing stim and resp
+	:param cell: name of the struct ['control_orn', 'control_pn']
+	:return: stim and resp traces
+	'''
+	dat = io.loadmat(file)
+
+	fs = 100
+	stim = dat[cell]['stim'][0][0].T
+
+	resp = dat[cell]['response'][0][0]
+	resp = resp[int(5 * fs):int(30 * fs)]
+
+	return stim, resp
+

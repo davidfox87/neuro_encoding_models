@@ -70,23 +70,14 @@ class InsertLags(BaseEstimator, TransformerMixin):
 if __name__ == "__main__":
 
 
-	# specify behavior to make a prediction for
-	behaviors = ["angvturns", "vmoves", "vymoves"]
-	behavior_par = behaviors[0]
-
-	# load the data from MATLAB .mat file
-	stim, response = io.load_behavior('../datasets/behavior/control_stim_to_behavior.mat', 30., 55., behavior_par, 50)
-
-	response = response.mean(axis=1)  # work on the fly-average
-	stim = stim[:, 0]
-
+	stim, response = io.load_mean_psth('../datasets/neural/control_stim_to_orn.mat', 'control_orn')
+	fs = 1000
+	# consider splitting by 80/20 train/validation and then make a lot of timeseries splits > 10, then test the mse on test
 	stim_train, stim_test, resp_train, resp_test = train_test_split(stim, response,
-																	test_size=0.001, shuffle=False, random_state=42)
-	if behavior_par == "vymoves":
-		scaler = MinMaxScaler([0, 1])
-	else:
-		scaler = MinMaxScaler([0, 1])
-
+	 																test_size=0.001,
+																	shuffle=False,
+																	random_state=42)
+	scaler = MinMaxScaler([0, 1])
 	resp_train_scaled = scaler.fit_transform(resp_train.reshape(-1, 1))
 
 	estimators = [('add_lags', InsertLags()),
@@ -94,13 +85,13 @@ if __name__ == "__main__":
 				  ('model', Ridge(fit_intercept=False))]
 
 	pipe = Pipeline(steps=estimators)
-	alphas = np.logspace(0, 40, num=10, base=2)
+	alphas = np.logspace(0, 20, num=10, base=2)
 
 	param_grid = {
 		'model__alpha': alphas,
-		'add_lags__lag': [200, 400, 600, 700]
+		'add_lags__lag': [1*fs, 2*fs, 4*fs]
 	}
-
+	#
 	tscv = TimeSeriesSplit(n_splits=10)
 	search = GridSearchCV(pipe, param_grid=param_grid, cv=tscv, verbose=1,
 						  scoring='neg_mean_squared_error', n_jobs=-1,
@@ -146,31 +137,22 @@ if __name__ == "__main__":
 	plt.axhline(0, color=".2", linestyle="--", zorder=1)
 
 	plt.figure()
+
 	xx, fnlin, rawfilteroutput = fit_nlin_hist1d(stim_train, resp_train, w, 0.02, 100)
 	plt.plot(fnlin(rawfilteroutput))
 
 	plt.plot(resp_train)
-
-	file_name = "../datasets/behavior/ridge_filters/" + behavior_par + "_filter.pkl"
-	data = {'name': behavior_par,
-	 		'k': w[1:],
-	 		'nlfun': (xx, fnlin(xx)),
-			'window_length': search.best_params_['add_lags__lag']}
-
-	output = open(file_name, 'wb')
-
-	# pickle dictionary using protocol 0
-	pickle.dump(data, output)
-
-
-	# repeat this on average control ORN, PN and unc13A KD ORN, PN
-
-
-
-	###############################################
-	# for finding the optimal windwo using Keras CNN model
-	# how does the mse compare to ridge
-	# https: // stackoverflow.com / questions / 42415076 / how - to - insert - keras - model - into - scikit - learn - pipeline
-
-
-
+	#
+	# file_name = "../datasets/behavior/ridge_filters/" + behavior_par + "_filter.pkl"
+	# data = {'name': behavior_par,
+	#  		'k': w[1:],
+	#  		'nlfun': (xx, fnlin(xx)),
+	# 		'window_length': search.best_params_['add_lags__lag']}
+	#
+	# output = open(file_name, 'wb')
+	#
+	# # pickle dictionary using protocol 0
+	# pickle.dump(data, output)
+	#
+	#
+	# # repeat this on average control ORN, PN and unc13A KD ORN, PN
