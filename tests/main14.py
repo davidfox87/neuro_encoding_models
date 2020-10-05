@@ -35,9 +35,9 @@ if __name__ == "__main__":
 	np.random.seed(42)
 
 	# CNN hyperparameters
-	batch_size = 64
+	batch_size = 20
 	epochs = 200
-	input_shape = [750, 1]
+	input_shape = [100, 1]
 	print_summary = False
 
 	# dir
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
 	# specify behavior to make a prediction for
 	behaviors = ["angvturns", "vmoves", "vymoves"]
-	behavior_par = behaviors[2]
+	behavior_par = behaviors[0]
 
 	# load the data from MATLAB .mat file
 	#stim, response = io.load_behavior('../datasets/behavior/unc13_stim_to_behavior.mat', 30., 55., behavior_par, 50)
@@ -66,15 +66,15 @@ if __name__ == "__main__":
 	# show stim train and stim test
 	# plot original stimulus in top subplot
 	# do implot for train in bottom left and implot for test in bottom right
-	# fig = plt.figure(constrained_layout=True)
-	# spec = fig.add_gridspec(ncols=1, nrows=2)
-	#
-	# # show the stimulus at the top
-	# # make gridspec (2, 2)
-	# f_ax1 = fig.add_subplot(spec[0, 0])
-	# f_ax2 = fig.add_subplot(spec[1, 0])
-	# f_ax1.imshow(stim_train)
-	# f_ax2.imshow(stim_test)
+	fig = plt.figure(constrained_layout=True)
+	spec = fig.add_gridspec(ncols=1, nrows=2)
+
+	# show the stimulus at the top
+	# make gridspec (2, 2)
+	f_ax1 = fig.add_subplot(spec[0, 0])
+	f_ax2 = fig.add_subplot(spec[1, 0])
+	f_ax1.imshow(stim_train)
+	f_ax2.imshow(stim_test)
 
 	# construct the CNN model
 	# load model with pretrained weights if already trained
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 		model.summary()
 		plot_model(model, dirs['save'] + 'model.png', show_shapes=True)
 
-	es = EarlyStopping(monitor='val_loss', patience=20)
+	es = EarlyStopping(monitor='val_loss', patience=40)
 
 	# callbacks
 	filepath = dirs['save'] + 'weights/weights_best_' + behavior_par + '.hdf5'
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
 	fig, ax = plt.subplots()
 	cnn.utils.plot_weights(ax, saved_model, 0.02, linewidth=4, color='k')
-	ax.set_xlim(-5, 0)
+	ax.set_xlim(-4, 0)
 
 
 	# predict and evaluate
@@ -153,7 +153,7 @@ if __name__ == "__main__":
 
 	tscv = TimeSeriesSplit(n_splits=5)
 	grid_result = GridSearchCV(estimator=model, cv=tscv,
-                        param_grid=param_search, scoring='neg_mean_squared_error')
+                        param_grid=param_search, scoring='neg_mean_squared_error', n_jobs=-1)
 	grid_result.fit(stim_train, resp_train)
 	print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
 

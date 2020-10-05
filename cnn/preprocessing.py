@@ -113,7 +113,7 @@ def preprocess_stim(stim_train, stim_test, input_shape=None):
 
 
 def preprocess(stim, response, input_shape=None):
-	stim = series_to_supervised(stim.reshape(-1, 1), n_in=input_shape[0] - 1, n_out=1)
+	stim = series_to_supervised(stim.reshape(-1, 1), n_in=input_shape[0], n_out=1)
 	stim = stim.values
 
 	resp = preprocess_resp(response)
