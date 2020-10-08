@@ -42,7 +42,6 @@ class GLM:
 		b = np.rot90(self.k_, k=2)
 		istm = signal.convolve2d(np.asarray([a]), b, mode='valid') + self.dc_
 
-
 		itot = istm.squeeze()			# total filter output
 
 		nsp = 0

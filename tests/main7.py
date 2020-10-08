@@ -6,6 +6,8 @@ from scipy.optimize import minimize
 from glmtools.fit import neg_log_lik
 import pickle
 from glmtools.model import GLM
+from basisFactory.bases import RaisedCosine
+
 
 """
 Refer to Pillow et al., 2005 for more info.
@@ -18,10 +20,10 @@ if __name__ == "__main__":
 	# load spike times
 	# t, v, stim, sptimes = izhikevich.simulate()
 	stim, sptimes = io.load_spk_times('../datasets/lpVmPN1.txt', '../datasets/spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
-	#stim = (stim / abs(np.max(stim)))*0.01
+
 	test = np.apply_along_axis(lambda x: x - np.mean(x), 0, stim)
 	stim = np.apply_along_axis(lambda x: x / np.std(x), 0, test)
-	stim = stim * 0.01
+	stim = stim * 0.001
 	dt = 0.001 				# (size 1 (ms) bins)
 	duration = 25
 
@@ -31,13 +33,8 @@ if __name__ == "__main__":
 	#
 	sps = np.array(sps).T
 
-	#stim_ = np.tile(stim, (len(sptimes), 1))  # we need a stim for every trial
-
 	# make an Experiment object
-	expt = Experiment(dt, duration, stim=stim, sptimes=sps)
-
-
-	# get an estimate of STA then project this onto basis as an initial guess for ML
+	expt = Experiment(dt, duration, stim=stim, sptimes=sps, response=sps)
 
 	# register continuous
 	expt.registerContinuous('stim')
@@ -47,19 +44,25 @@ if __name__ == "__main__":
 
 	# initialize design spec with one trial
 	trial_inds = list(range(len(sptimes)))
-	dspec = DesignSpec(expt, trial_inds)
+	dspec = DesignSpec(expt, [0])
+	# make a set of basis functions
 
-	# add stim and spike history regressors
-	dspec.addRegressorContinuous()
-	dspec.addRegressorSpTrain()
+	fs = 1/dt
+	nkt = int(2 * fs)
+	cos_basis = RaisedCosine(100, 5, 1, 'stim')
+	cos_basis.makeNonlinearRaisedCosStim(expt.dtSp, [1, nkt/2], 10, nkt)  # first and last peak positions,
+	dspec.addRegressorContinuous(basis=cos_basis)
+
+	basis = RaisedCosine(100, 5, 1, 'sphist')
+	basis.makeNonlinearRaisedCosPostSpike(expt.dtSp, [.001, 1], .05)
+	dspec.addRegressorSpTrain(basis=basis)
 
 	dm, X, y = dspec.compileDesignMatrixFromTrialIndices()
 
-	# use linear regression to feed in an initial guess for minimize
-
-	prs = np.random.normal(0, .2, 14)
+	prs = np.random.normal(0, .2, 11)
+	# pars = 5 + 8
 	res = minimize(neg_log_lik, prs, args=(5, X, y, 1),
-										options={'maxiter': 1000, 'disp': True})
+										options={'maxiter': 10000, 'disp': True})
 
 	theta_ml = res['x']
 
@@ -77,19 +80,13 @@ if __name__ == "__main__":
 			'h': h,
 			'dc': dc}
 
-	output = open('glmpars_vm_to_spiking.pkl', 'wb')
+	output = open('../models/glmpars_vm_to_spiking.pkl', 'wb')
 
 	# pickle dictionary using protocol 0
 	pickle.dump(data, output)
 
 	glm = GLM(dspec.expt.dtSp, k, h, dc)
 
-	# this is where we put the model Vm to get a transform Vm to spikes
-	stim, sptimes = io.load_spk_times('../datasets/lpVmPN1.txt', '../datasets/spTimesPNControl/pn1SpTimes_reverseChirp.mat', 5, 30)
-	test = np.apply_along_axis(lambda x: x - np.mean(x), 0, stim)
-	stim = np.apply_along_axis(lambda x: x / np.std(x), 0, test)
-	stim *= 0.01
-	#stim = (stim / abs(np.max(stim))) * 0.01
 	# get prediction of spike count over time
 
 	nsim = 10

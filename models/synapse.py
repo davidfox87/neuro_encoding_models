@@ -151,7 +151,7 @@ def obj_fun(theta, target_psth: np.ndarray):
 	v, i_syn = run_passive_cell(pars, g_syn)
 
 	# read in pars for GLM using pickle
-	pkl_file = open('../tests/glmpars_vm_to_spiking.pkl', 'rb')
+	pkl_file = open('glmpars_vm_to_spiking.pkl', 'rb')
 	glmpars = pickle.load(pkl_file)
 	k = glmpars['k']
 	h = glmpars['h']
@@ -253,8 +253,8 @@ if __name__ == "__main__":
 	# # res = minimize(obj_fun, x0, args=psth, method='COBYLA', tol=1e-3)
 	# # theta = res['x']
 
-	#target_psth = np.genfromtxt("../datasets/pnfr_reverse_control.txt", delimiter='\t')
-	target_psth = np.genfromtxt("../datasets/pnfr_reverse_u13AKD.txt", delimiter='\t')
+	target_psth = np.genfromtxt("../datasets/pnfr_reverse_control.txt", delimiter='\t')
+	# target_psth = np.genfromtxt("../datasets/pnfr_reverse_u13AKD.txt", delimiter='\t')
 	#x0 = [18.05932, 1.9742, 3.] # f1, tau_d1, g1, tau_c1
 	x0 = [0.03]
 	#bounds_ = [(0., None), (0., None), (0., 5.)]

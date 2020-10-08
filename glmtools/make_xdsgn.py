@@ -48,10 +48,10 @@ class Regressor:
 	def spikefilt(self, sps, basis):
 		nt, nb = basis.shape
 		slen = len(sps)
-		sps_ = np.asarray([sps])
-
+		#sps_ = np.asarray([sps])
+		sps_ = sps.reshape(-1, 1)
 		# Do convolution and remove extra bins
-		res = signal.convolve2d(sps_.T, basis, mode='full')
+		res = signal.convolve2d(sps_, basis, mode='full')
 		Xsp = np.vstack((np.zeros((1, nb)), res[:-nt, :]))
 		return Xsp
 
@@ -117,15 +117,26 @@ class RegressorContinuous(Regressor):
 
 class RegressorSphist(Regressor):
 	def __init__(self, name, bins_before, bins_after=0, basis=None):
-		self.name = name
-		self.bins_after = bins_after
-		self.bins_before = bins_before
-		self.params = [name + "_time"]
+		# self.name = name
+		# self.bins_after = bins_after
+		# self.bins_before = bins_before
+		# self.params = [name + "_time"]
+		#
+		# # set super class parameters: every regressor may have a basis (or not)
+		# # and associated with it is a dimension
+		# self.basis = basis
+		# self.edim_ = basis.nbases
 
-		# set super class parameters: every regressor may have a basis (or not)
-		# and associated with it is a dimension
+		self.name = name
+		self.params = [name + "_time"]
 		self.basis = basis
-		self.edim_ = basis.nbases
+
+		if self.basis:
+			self.edim_ = basis.nbases
+		else:
+			self.bins_after = bins_after
+			self.bins_before = bins_before
+			self.edim_ = self.bins_before + self.bins_after
 
 	def duration(self, **kwargs):
 		return self.bins_before + self.bins_after
@@ -195,7 +206,7 @@ class DesignMatrix:
 		'''
 
 		d = {}
-		start_index = 0 # start from 1 to ignore bias
+		start_index = 1 # start from 1 to ignore bias
 		for r in self._regressors:
 			name = r.name
 
@@ -278,18 +289,22 @@ class DesignSpec:
 		self._trialinds = trialinds
 
 		self.dt_ = expt.dtSp
-		self._ntfilt = int(15.0/self.expt.dtSp)
+		self._ntfilt = int(2.0/self.expt.dtSp)
 		self._ntsphist = 100
 
 		self.regressors = []
 
-	def addRegressorSpTrain(self):
-
+	def addRegressorSpTrain(self, basis=None):
 		# first make basis to represent the spike history filter
-		basis = RaisedCosine(100, 8, 1, 'sphist')
-
-		basis.makeNonlinearRaisedCosPostSpike(self.expt.dtSp, [0.001, 1], 0.05)
-		r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
+		# basis = RaisedCosine(100, 5, 1, 'sphist')
+		#
+		# basis.makeNonlinearRaisedCosPostSpike(self.expt.dtSp, [.001, 1], .5)
+		# r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
+		# self.regressors.append(r)
+		if basis:
+			r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
+		else:
+			r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist)
 		self.regressors.append(r)
 
 	def addRegressorContinuous(self, basis=None):
@@ -299,7 +314,6 @@ class DesignSpec:
 			r = RegressorContinuous(self.expt.regressortype['stim'], self._ntfilt)
 
 		self.regressors.append(r)
-
 
 	def compileDesignMatrixFromTrialIndices(self):
 		expt = self.expt
@@ -338,8 +352,6 @@ class DesignSpec:
 
 			Xfull = np.concatenate([Xfull, X], axis=0)
 			Yfull = np.concatenate([Yfull, self.expt.response[:, tr]])
-
-		#Xfull = stats.zscore(Xfull)
 
 		# if ridge regression and cross-validation, then we need to add intercept column
 		# Xfull = np.column_stack([np.ones_like(Yfull), Xfull])

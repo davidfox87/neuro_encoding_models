@@ -1,19 +1,23 @@
 import utils.read as io
 import numpy as np
 from matplotlib import pyplot as plt
-from glmtools.make_xdsgn import DesignMatrix, RegressorContinuous, RegressorSphist, Experiment, DesignSpec
+from glmtools.make_xdsgn import Experiment, DesignSpec
 from scipy.optimize import minimize
-from glmtools.fit import ridge_fit, neg_log_lik, mapfit_GLM, ridgefitCV, poisson, poisson_deriv
+from glmtools.fit import neg_log_lik
 from glmtools.model import GLM
 import pickle
+from basisFactory.bases import RaisedCosine
 
 if __name__ == "__main__":
 
 	# load spike times for cell
-	cell = "pn6"
+	cell = "pn1"
 	response = '../datasets/spTimesPNControl/{}SpTimes_reverseChirp.mat'.format(cell, '.txt')
 	stim, sptimes = io.load_spk_times('../datasets/stim.txt', response, 5, 30)
-	stim = (stim / np.max(stim))*0.01
+
+	test = np.apply_along_axis(lambda x: x - np.mean(x), 0, stim)
+	stim = np.apply_along_axis(lambda x: x / np.std(x), 0, test)
+	stim = stim * 0.001
 
 	dt = 0.001 				# (size 1 (ms) bins)
 	duration = 25
@@ -27,9 +31,7 @@ if __name__ == "__main__":
 	stim_ = np.tile(stim, (len(sptimes), 1)).T  # we need a stim for every trial
 
 	# make an Experiment object
-	expt = Experiment(dt, duration, stim=stim_, sptimes=sps)
-
-	# get an estimate of STA then project this onto basis as an initial guess for ML
+	expt = Experiment(dt, duration, stim=stim_, sptimes=sps, response=sps)
 
 	# register continuous
 	expt.registerContinuous('stim')
@@ -42,18 +44,20 @@ if __name__ == "__main__":
 	dspec = DesignSpec(expt, trial_inds)
 
 	# add stim and spike history regressors
-	dspec.addRegressorContinuous()
-	dspec.addRegressorSpTrain()
+	fs = 1 / dt
+	nkt = 2000
+	cos_basis = RaisedCosine(100, 5, 1, 'stim')
+	cos_basis.makeNonlinearRaisedCosStim(expt.dtSp, [1, 1000], 50, nkt)  # first and last peak positions,
+	dspec.addRegressorContinuous(basis=cos_basis)
+
+	basis = RaisedCosine(100, 8, 1, 'sphist')
+	basis.makeNonlinearRaisedCosPostSpike(expt.dtSp, [.001, 1], .05)
+	dspec.addRegressorSpTrain(basis=basis)
 
 	dm, X, y = dspec.compileDesignMatrixFromTrialIndices()
 
-	# use linear regression to feed in an initial guess for minimize
-
-	# prs = np.linalg.inv(X.T @ X) @ X.T @ y
-	#prs = np.concatenate((np.asarray([0]), prs), axis=0)
-
 	pars = np.random.normal(0, .2, 14)
-	res = minimize(neg_log_lik, pars, args=(5, X, y, 1),
+	res = minimize(neg_log_lik, pars, args=(cos_basis.nbases, X, y, 1),
 										options={'maxiter': 1000, 'disp': True})
 
 	theta_ml = res['x']
