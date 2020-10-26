@@ -74,6 +74,8 @@ class RaisedCosine(Basis):
 		res = list(map(lambda z: np.maximum(z, -np.pi), res))
 		ihbasis = (np.cos(res) + 1) / 2
 
+		# ii = np.argwhere(iht <= endpoints[0])
+		# ihbasis[ii] = 1
 		# assign to member variables
 		self.centers = invnl(ctrs)
 		self.B = orth(ihbasis)

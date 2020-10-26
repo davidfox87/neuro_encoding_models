@@ -5,7 +5,8 @@ import pickle
 from glmtools.model import GLM
 from sklearn.metrics import mean_squared_error
 from scipy.optimize import minimize
-
+from scipy import signal
+from scipy.signal import chirp, find_peaks
 
 def get_psth(sptrain, winsize, samprate):
 	smooth_win = np.hanning(winsize) / np.hanning(winsize).sum()
@@ -19,19 +20,19 @@ def default_pars(**kwargs) -> Dict[str, float]:
 	pars = {}
 
 	# synaptic parameters
-	pars['f1'] = 0.0023     		# depletion rate (/ms)
+	pars['f1'] = 0.23     		# depletion rate (/ms)
 	pars['tau_d1'] = 1006.  	# depletion recovery time (ms)
 	#pars['g1'] = 20.     		# conductance gain
 	pars['tau_c1'] = 9.3       	# conductance decay time constant (ms)
 
-	pars['f2'] = 0.0073 		# depletion rate (/ms)
-	pars['tau_d2'] = 33247.  	# depletion recovery time (ms)
-	pars['g2'] = 1.97			# conductance gain
-	pars['tau_c2'] = 280.  		# conductance decay time constant (ms)
+	pars['f2'] = 0.0073 			# depletion rate (/ms)
+	pars['tau_d2'] = 33250.  	# depletion recovery time (ms)
+	#pars['g2'] = 0.2		# conductance gain
+	pars['tau_c2'] = 80.  		# conductance decay time constant (ms)
 
 	# passive membrane equation parameters
 	pars['rm'] = 800. / 1000.   # input resistance [GOhm]
-	pars['e_syn'] = -10.      	# synaptic reversal potential [mV]
+	pars['e_syn'] = 10.      	# synaptic reversal potential [mV]
 	pars['e_leak'] = -70.       # leak reversal potential [mV]
 	pars['tau_m'] = 5.			# membrane time constant [ms]
 	pars['v_init'] = -70.  		# initial potential [mV]
@@ -49,7 +50,7 @@ def default_pars(**kwargs) -> Dict[str, float]:
 	return pars
 
 
-def run_passive_cell(pars: dict, gsyn: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def run_passive_cell(pars: dict, gsyn: np.ndarray, iapp_: np.float) -> Tuple[np.ndarray, np.ndarray]:
 	"""
 	Simulate the passive membrane eq with synaptic current
 
@@ -78,13 +79,12 @@ def run_passive_cell(pars: dict, gsyn: np.ndarray) -> Tuple[np.ndarray, np.ndarr
 	isyn = np.zeros(nt)
 
 	v[0] = v_init
-	#plt.plot(gsyn)
+	iapp = iapp_
 	# simulate the passive neuron dynamics
 	for i in range(nt - 1):
 		isyn[i] = gsyn[i] * rm * (v[i] - e_syn)
-
 		# calculate the increment of the membrane potential
-		dv = -(dt / tau_m) * (v[i] - e_leak + isyn[i])
+		dv = (dt / tau_m) * (rm*iapp - ((v[i] - e_leak) + isyn[i]))
 
 		# update the membrane potential
 		v[i + 1] = v[i] + dv
@@ -94,7 +94,18 @@ def run_passive_cell(pars: dict, gsyn: np.ndarray) -> Tuple[np.ndarray, np.ndarr
 
 def get_gsyn(fr: np.ndarray, pars: Dict[str, float]):
 
+	# implement presynaptic inhibition here
+
 	s = fr / 1000				# spike rate in spikes / ms
+	a = 1 / 400. * np.arange(500) * np.exp(1 - np.arange(500) / 400.)
+	a = a/np.sum(a)
+	#
+	# a = np.expand_dims(a, axis=0)
+	# s = np.expand_dims(s, axis=0)
+	inh = np.convolve(fr, a, mode='same')
+	# inh = sameconv(s, a)
+
+	s = s / (1 + 0.000001 * inh)
 
 	f1 = pars['f1']
 	tau_d1 = pars['tau_d1']
@@ -123,10 +134,7 @@ def get_gsyn(fr: np.ndarray, pars: Dict[str, float]):
 		a2[i + 1] = a2[i] + (-f2 * s[i] * a2[i] + (1 - a2[i]) / tau_d2) 	# depletion
 		c2[i + 1] = c2[i] + (g2 * a2[i] * s[i] - c2[i] / tau_c2) 			# conductance
 
-	# down-sample
-	#c1, c2 = c1[::10], c2[::10]
-
-	return c1, c2
+	return c1.squeeze(), c2.squeeze(), inh
 
 
 def obj_fun(theta, target_psth: np.ndarray):
@@ -137,16 +145,12 @@ def obj_fun(theta, target_psth: np.ndarray):
 	:return: rmse
 	"""
 	g1_ = theta[0]
-	#g2_ = theta[1]
-	#dc = theta[2]
 	print('g1 is {}'.format(g1_))
-
 	fr = np.genfromtxt('../datasets/ornfr_reverse.txt')
-	#fr = fr[::10]
 	pars = default_pars(T=35.0, dt=0.1, g1=g1_)
 
 	g1, g2 = get_gsyn(fr, pars)
-	g_syn = g1
+	g_syn = g1 + g2
 
 	v, i_syn = run_passive_cell(pars, g_syn)
 
@@ -155,7 +159,7 @@ def obj_fun(theta, target_psth: np.ndarray):
 	glmpars = pickle.load(pkl_file)
 	k = glmpars['k']
 	h = glmpars['h']
-	dc = 2.13
+	dc = glmpars['dc']
 
 	# simulate a GLM using these parameters
 	glm = GLM(pars['dt'], k, h, dc)
@@ -163,7 +167,7 @@ def obj_fun(theta, target_psth: np.ndarray):
 	# need to scale the output Vm for it to work properly
 	v = np.apply_along_axis(lambda x: x - np.mean(x), 0, v)
 	v = np.apply_along_axis(lambda x: x / np.std(x), 0, v)
-	v *= 0.01
+	v *= 0.001
 
 	# simulate GLM with model Vm and output a prediction of spikes
 	t = np.arange(0, pars['T'], 0.001)
@@ -177,8 +181,8 @@ def obj_fun(theta, target_psth: np.ndarray):
 
 	model_psth = get_psth(sptrain, 100, 100)
 
-	model_psth_ = model_psth[5000:10000]
-	target_psth_ = target_psth[5000:10000]
+	model_psth_ = model_psth[5000:8000]
+	target_psth_ = target_psth[5000:8000]
 	model_psth_ = model_psth_[::10]
 	target_psth_ = target_psth_[::10]
 	# get rmse using model psth and target psth
@@ -187,81 +191,132 @@ def obj_fun(theta, target_psth: np.ndarray):
 
 	return rmse  # goal is to minimize this
 
+def sameconv(x, f):
+	'''
+	This function takes an input vector and convolves it with the filter f
+	The filter f is flipped and slid along x. valid argument used for convolve so
+	x is padded with nf zeros at the beginning
+	:param x: stimulus vector
+	:param f: convolutional filter
+	:return: filtered output
+	'''
+	a = np.concatenate((np.zeros(f.shape[1] - 1), x), axis=None)
+	b = np.rot90(f, k=2)
+	res = signal.convolve2d(np.asarray([a]), b, mode='valid')
+	return res.squeeze()
+
+def get_filtered_output(orn_fr, g1=20, dur=30):
+	pars = default_pars(T=dur, dt=0.1, g1=g1)
+
+	g1, g2 = get_gsyn(orn_fr, pars)
+	g_syn = g1 + g2
+
+	v, i_syn = run_passive_cell(pars, g_syn)
+
+	# read in pars for GLM using pickle
+	pkl_file = open('../models/glmpars_vm_to_spiking.pkl', 'rb')
+	glmpars = pickle.load(pkl_file)
+	k = glmpars['k']
+	h = glmpars['h']
+
+	k = np.expand_dims(k, 0)
+
+	# convolve v with k to get filter output
+	filtered_output = sameconv(v, k)
+
+	return filtered_output, v, i_syn
+
+def run(orn_fr, g1, g2, iapp, dur=30):
+	"""
+
+	:param theta: parameter vector that contains the values of g1 and g2 that we want to optimize
+	:param target: the target PSTH that we would like to fit
+	:return: rmse
+	"""
+	pars = default_pars(T=dur, dt=0.1, g1=g1, g2=g2)
+
+	g1, g2, inh = get_gsyn(orn_fr, pars)
+	g_syn = g1 + g2
+
+	v, i_syn = run_passive_cell(pars, g_syn, iapp)
+
+	# read in pars for GLM using pickle
+	pkl_file = open('../models/glmpars_vm_to_spiking.pkl', 'rb')
+	glmpars = pickle.load(pkl_file)
+	k = glmpars['k']
+	h = glmpars['h']
+	dc = glmpars['dc']
+	vmin = glmpars['v_min']
+	vmax = glmpars['v_max']
+
+	# simulate a GLM using these parameters
+	glm = GLM(pars['dt'], k, h, dc)
+
+	# need to scale the output Vm for it to work properly
+	vm = (v - vmin) / (vmax - vmin)
+
+	# simulate GLM with model Vm and output a prediction of spikes
+	t = np.arange(0, pars['T'], 0.001)
+	sptrain = np.zeros((len(t), 5))
+
+	for i in range(5):
+		# seed random state
+		np.random.seed(i)
+		_, sps, istm, hcurr = glm.simulate(vm)
+		sptrain[:, i] = sps
+
+	model_psth = get_psth(sptrain, 100, 100)
+
+	return v, model_psth, istm, hcurr, sptrain, g1, g2, i_syn, inh
+
+
+def freqz(tr):
+	t = np.linspace(0, 25, int(25/0.001))
+
+	w = (0-1)/2 + (0-1)/2.*chirp(t, f0=5., f1=.1, t1=23.85, method='log') + 1
+	# plt.plot(t, w)
+
+	peaks, _ = find_peaks(-w)
+	peaks = np.concatenate((0, peaks, len(w)-1), axis=None)
+	# plt.plot(t[peaks], np.zeros((len(peaks), 1)), 'ok')
+
+	frequency = 1 / (t[peaks[range(1, len(peaks))]] - t[peaks[(range(len(peaks) - 1))]])
+	peaks = peaks + 5000
+
+	amp_vec = np.zeros_like(frequency)
+	max_vec = np.zeros_like(frequency)
+	tpeaks_vec = np.zeros_like(frequency)
+
+	for j in range(len(peaks)-2):
+		index1, index2 = peaks[j], peaks[j+1]
+
+		tmp = tr[index1:index2]
+
+		order = 3
+		framelen = round(len(tmp) * 0.1)
+		if (framelen % 2) == 0:
+			framelen = framelen + 1
+
+		tmp = signal.savgol_filter(tmp, framelen, order)  # window size 51, polynomial order 3
+
+		max_, min_ = np.argmax(tmp), np.argmin(tmp)
+		amp_vec[j] = tmp[max_] - tmp[min_]
+		max_vec[j] = tmp[max_]
+		tpeaks_vec[j] = t[max_ + index1]
+
+	return frequency, amp_vec, max_vec, tpeaks_vec
+
 
 if __name__ == "__main__":
-	# read in firing-rate
-	# fr = np.genfromtxt('../datasets/ornfr_reverse.txt')
-	# #fr = fr[::10]
-	# pars = default_pars(T=35.0, dt=0.1, g1=20, g2=1.8)
-	#
-	# g1, g2 = get_gsyn(fr, pars)
-	# g_syn = g1 + g2
-	#
-	# v, i_syn = run_passive_cell(pars, g_syn)
-	#
-	# # fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True)
-	# t = np.arange(0, pars['T'], 0.001)
-	# # ax1.plot(t, g1, 'm', linewidth=0.5)
-	# # ax1.plot(t, g2, 'c', linewidth=0.5)
-	# # ax2.plot(t, i_syn, 'k', linewidth=0.5)
-	# # ax3.plot(t, v, 'k', linewidth=0.5)
-	# # ax4.plot(t, fr, 'k', linewidth=0.5)
-	#
-	# # read in pars for GLM using pickle
-	# pkl_file = open('../tests/glmpars_vm_to_spiking.pkl', 'rb')
-	# glmpars = pickle.load(pkl_file)
-	# k = glmpars['k']
-	# h = glmpars['h']
-	# dc = glmpars['dc']
-	#
-	# # simulate a GLM using these parameters
-	# glm = GLM(pars['dt'], k, h, dc)
-	#
-	# # need to scale the output Vm for it to work properly
-	# # v = (v / abs(np.max(v))) * 0.01
-	# v = np.apply_along_axis(lambda x: x - np.mean(x), 0, v)
-	# v = np.apply_along_axis(lambda x: x / np.std(x), 0, v)
-	# v *= 0.01
-	#
-	# # simulate GLM with model Vm and output a prediction of spikes
-	# sptimes = np.zeros((len(t), 5))
-	# sptrain = np.zeros((len(t), 5))
-	# for i in range(5):
-	# 	np.random.seed(i)
-	# 	_, sps = glm.simulate(v)
-	# 	sptimes[:, i] = sps * t
-	# 	sptrain[:, i] = sps
-	#
-	# #plt.eventplot(sptimes.T, linewidth=0.5)
-	# psth = get_psth(sptrain, 100, 100)
-	#
-	# # output GLM parameters: k, h, dc
-	# data = {'model_psth': psth}
-	#
-	# output = open('model_psth.pkl', 'wb')
-	#
-	# # pickle dictionary using protocol 0
-	# pickle.dump(data, output)
-	#
-	#
-	# # normalize
-	# #psth /= np.max(np.abs(psth), axis=0)
-	# #plt.plot(t, (5*psth)-0.5, 'k', linewidth=0.5)
-	#
-	# # see if we can recover the original parameters of 40 and 1.8.
-	# # x0 = [2.]
-	# # res = minimize(obj_fun, x0, args=psth, method='COBYLA', tol=1e-3)
-	# # theta = res['x']
-
 	target_psth = np.genfromtxt("../datasets/pnfr_reverse_control.txt", delimiter='\t')
 	# target_psth = np.genfromtxt("../datasets/pnfr_reverse_u13AKD.txt", delimiter='\t')
-	#x0 = [18.05932, 1.9742, 3.] # f1, tau_d1, g1, tau_c1
-	x0 = [0.03]
-	#bounds_ = [(0., None), (0., None), (0., 5.)]
+	x0 = [20]
 	bounds_ = [(0., None)]
 	res = minimize(obj_fun, x0, args=target_psth, method='COBYLA',
 				   tol=1e-6, options={'maxiter': 1000})
 	theta = res['x']
+
+	# pickle the parameters
 
 
 

@@ -41,40 +41,35 @@ class GLM:
 		a = np.concatenate((np.zeros(nf - 1), stim), axis=None)
 		b = np.rot90(self.k_, k=2)
 		istm = signal.convolve2d(np.asarray([a]), b, mode='valid') + self.dc_
+		istm = istm.squeeze()
 
-		itot = istm.squeeze()			# total filter output
+		# trim off the extra zeros afterward
+		itot = np.concatenate((np.copy(istm), np.zeros_like(self.h_)))			# this will be the total filter output after postspike filter is added
+		hcurr = np.zeros_like(itot)
 
-		nsp = 0
-		sps = np.zeros(rlen)
-		jbin = 1
-		tspnext = rnd.exponential(1)
-		rprev = 0
+		sps = np.zeros_like(itot)
 
-		while jbin < rlen:
+		# loop through all times
+		for iinxt in range(len(istm)):
+			rrnxt = nlfun(itot[iinxt])			# pass through nonlinear function
 
-			iinxt = np.arange(jbin, min(jbin + nbins_per_eval - 1, rlen) + 1) # we have to add 1 because arange does not include upper lim
-
-			rrnxt = nlfun(itot[iinxt]) * dt
-
-			rrcum = np.cumsum(rrnxt) + rprev
-
-			if tspnext >= rrcum[-1]:
-				jbin = iinxt[-1] + 1
-				rprev = rrcum[-1]
-			else:
-				ispk = iinxt[np.where(rrcum >= tspnext)[0][0]]
-				nsp = nsp + 1
+			# if our current filter output passed through exp nonlinerity is not greater than random number don't spike
+			if np.random.rand() < (1-np.exp(-rrnxt/1000)):
+				ispk = iinxt
 				sps[ispk] = 1
 
-				mxi = min(rlen, ispk + hlen)
+				mxi = ispk + hlen
+
 				ii_postspk = np.arange(ispk, mxi)
 
 				if len(ii_postspk):
-					itot[ii_postspk] = itot[ii_postspk] + self.h_[range(0, mxi - ispk)]
+					itot[ii_postspk] = itot[ii_postspk] + self.h_
+					hcurr[ii_postspk] += self.h_
 
-				tspnext = rnd.exponential(1) 	# draw next spike time
-				rprev = 0 						# reset integrated intensity
-				jbin = ispk + 1 				# Move to next bin
+		# trim off zero padding
+		hcurr = hcurr[range(0, slen)]
+		itot = itot[range(0, slen)]
+		sps = sps[range(0, slen)]
 
 		tsp = np.where(sps > 0)[0]
-		return tsp, sps
+		return tsp, sps, istm, hcurr

@@ -27,6 +27,47 @@ from sklearn.metrics import mean_squared_error
 from glmtools.fit import neg_log_lik, ridgefitCV, fit_nlin_hist1d
 
 
+# make a forecast
+def forecast(model, history, n_input):
+	# flatten data
+	data = np.array(history)
+	data = data.reshape((-1, 1))
+	# retrieve last observations for input data
+	input_x = data[-n_input:, 0]
+	# reshape into [1, n_input, 1]
+	input_x = input_x.reshape((1, len(input_x), 1))
+	# forecast the next week
+	yhat = model.predict(input_x, verbose=0)
+	# we only want the vector forecast
+	yhat = yhat[0]
+	return yhat
+
+
+# evaluate a single model
+def evaluate_model(model, train, test, n_input):
+	# fit model
+	# shape = [ntimesteps, nfeatures]
+	# history is a list of weekly data
+	# fit model
+
+	# history is a list of weekly data
+
+	history = [x for x in train]
+	# walk-forward validation over each week
+	predictions = list()
+	for i in range(len(test)):
+		# predict the week
+		yhat_sequence = forecast(model, history, n_input)
+		# store the predictions
+		predictions.append(yhat_sequence)
+		# get real observation and add to history for predicting the next week
+		history.append(test[i, :])
+	# evaluate predictions days for each week
+	predictions = np.array(predictions)
+	#score, scores = evaluate_forecasts(test[:, :, 0], predictions)
+	return predictions
+
+
 """
 this is a script to run a CNN on fly-averaged behavior time series
 """
@@ -35,9 +76,9 @@ if __name__ == "__main__":
 	np.random.seed(42)
 
 	# CNN hyperparameters
-	batch_size = 20
-	epochs = 200
-	input_shape = [100, 1]
+	batch_size = 32
+	epochs = 100
+	input_shape = [800, 1]
 	print_summary = False
 
 	# dir
@@ -59,9 +100,9 @@ if __name__ == "__main__":
 	stim, response = io.load_behavior('../datasets/behavior/control_stim_to_behavior.mat', 30., 55., behavior_par, 50)
 
 	response = response.mean(axis=1)  # work on the fly-average
-	stim = stim[:, 0]
+	stim = stim[:, 0].reshape((-1, 1))
 	# preprocess for the CNN to work. This is a VERY important step!
-	stim_train, stim_test, resp_train, resp_test = preprocess(stim, response, input_shape)
+	stim_train, stim_test, resp_train, resp_test, scaled_train, scaled_test = preprocess(stim, response, input_shape)
 
 	# show stim train and stim test
 	# plot original stimulus in top subplot
@@ -80,9 +121,9 @@ if __name__ == "__main__":
 	# load model with pretrained weights if already trained
 	filepath = None
 	if filepath is None:
-		model = cnn.create_model.load_model(input_shape)
+		model = cnn.create_model.load_model(stim_train)
 	else:
-		model = cnn.create_model.load_model(input_shape, trained=True, weight_path=filepath)
+		model = cnn.create_model.load_model(stim_train, trained=True, weight_path=filepath)
 
 	if print_summary:
 		model.summary()
@@ -106,19 +147,50 @@ if __name__ == "__main__":
 	saved_model = load_model(filepath=filepath,
 							 custom_objects={'r_square': r_square})
 
-	# predict and evaluate
-	_pred_train = model.predict(stim_train).T[0]
-	_pred_test = model.predict(stim_test).T[0]
-
-	train_accuracy = cnn.utils.evaluator(resp_train, _pred_train)
-	test_accuracy = cnn.utils.evaluator(resp_test, _pred_test)
-
-	pickle.dump(train_accuracy, open(dirs['save'] + behavior_par + '_train_accuracy.pkl', 'wb'), 2)
-	pickle.dump(test_accuracy, open(dirs['save'] + behavior_par + '_test_accuracy.pkl', 'wb'), 2)
-
 	fig, ax = plt.subplots()
 	cnn.utils.plot_weights(ax, saved_model, 0.02, linewidth=4, color='k')
-	ax.set_xlim(-4, 0)
+	ax.set_xlim(-8, 0)
+
+
+	# make predictions
+	test_predictions = []
+
+	length = 801
+	# last n observations from training data
+	first_eval_batch = scaled_train[-length:]
+
+	# reshape into [1, length, 1]
+	current_batch = first_eval_batch.reshape(1, length, 1)
+
+	# forecast for every point in the test set
+	for i in range(len(scaled_test)):
+		current_pred = model.predict(current_batch)[0]
+
+		test_predictions.append(current_pred)
+
+		current_batch = np.append(current_batch[:, 1:, :], current_pred.reshape(1, 1, 1), axis=1)
+
+	test_predictions = np.reshape(test_predictions, (-1, 1))
+
+	# predict and evaluate
+	nt_train, nt = len(stim_train), len(stim)
+	time_train = np.arange(nt_train) * 0.02
+	time_test = np.arange(nt_train, nt) * 0.02
+
+	plt.figure()
+	plt.plot(time_train, resp_train.squeeze())
+	plt.plot(time_test, resp_test.squeeze())
+	plt.plot(time_test, test_predictions)
+
+
+
+
+	# train_accuracy = cnn.utils.evaluator(resp_train, _pred_train)
+	# test_accuracy = cnn.utils.evaluator(resp_test, _pred_test)
+
+	# pickle.dump(train_accuracy, open(dirs['save'] + behavior_par + '_train_accuracy.pkl', 'wb'), 2)
+	# pickle.dump(test_accuracy, open(dirs['save'] + behavior_par + '_test_accuracy.pkl', 'wb'), 2)
+
 
 
 	# predict and evaluate
@@ -127,12 +199,12 @@ if __name__ == "__main__":
 	time_test = np.arange(nt_train, nt) * 0.02
 
 	plt.figure()
-	_pred_train = saved_model.predict(stim_train)
-	_pred_test = saved_model.predict(stim_test)
+	_pred_train = saved_model.predict(stim_train.squeeze())
+	_pred_test = saved_model.predict(stim_test.squeeze())
 	plt.plot(time_train, resp_train.squeeze())
 	plt.plot(time_test, resp_test.squeeze())
-	plt.plot(time_train, _pred_train)
-	plt.plot(time_test, _pred_test)
+	plt.plot(time_train, _pred_train.squeeze().squeeze())
+	plt.plot(time_test, _pred_test.squeeze().squeeze())
 
 	plt.figure()
 	# plot training curve for rmse
@@ -164,14 +236,14 @@ if __name__ == "__main__":
 
 
 
-
-	# the mse has to be evaluated not on the held out test set but on the entire prediction
-	# and the actual measurement
-	print("Ridge mse on train test set is: ", mean_squared_error(resp_train, model.predict(stim_train)))
-	print("Ridge mse on held out test set is: ", mean_squared_error(resp_test, model.predict(stim_test)))
-
-	print("CNN mse on train set is: ", train_accuracy[1])
-	print("CNN mse on held out test set is: ", test_accuracy[1])
+	#
+	# # the mse has to be evaluated not on the held out test set but on the entire prediction
+	# # and the actual measurement
+	# print("Ridge mse on train test set is: ", mean_squared_error(resp_train, model.predict(stim_train)))
+	# print("Ridge mse on held out test set is: ", mean_squared_error(resp_test, model.predict(stim_test)))
+	#
+	# print("CNN mse on train set is: ", train_accuracy[1])
+	# print("CNN mse on held out test set is: ", test_accuracy[1])
 
 
 	w = model.coef_[0]

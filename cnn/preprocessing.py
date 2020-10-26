@@ -103,8 +103,8 @@ def preprocess_stim(stim_train, stim_test, input_shape=None):
 	# stim = scaler.fit_transform(stim)
 	# return stim
 	# stim_train = stim_train.reshape(-1, 1)
-	scalar = StandardScaler()
-	#scalar = MinMaxScaler()
+	#scalar = StandardScaler()
+	scalar = MinMaxScaler()
 	scalar.fit(stim_train)
 	stim_train = scalar.transform(stim_train)
 	stim_test = scalar.transform(stim_test)
@@ -113,19 +113,24 @@ def preprocess_stim(stim_train, stim_test, input_shape=None):
 
 
 def preprocess(stim, response, input_shape=None):
-	stim = series_to_supervised(stim.reshape(-1, 1), n_in=input_shape[0], n_out=1)
-	stim = stim.values
 
 	resp = preprocess_resp(response)
 	stim_train, stim_test, resp_train, resp_test = train_test_split(stim, resp,
-																	test_size=0.2, shuffle=False, random_state=42)
-	stim_train, stim_test = preprocess_stim(stim_train, stim_test, input_shape=input_shape)
+																	test_size=0.1, shuffle=False, random_state=42)
+
+	scaled_train, scaled_test = preprocess_stim(stim_train, stim_test, input_shape=input_shape)
+
+	stim_train = series_to_supervised(scaled_train.reshape(-1, 1), n_in=input_shape[0], n_out=1)
+	stim_test = series_to_supervised(scaled_test.reshape(-1, 1), n_in=input_shape[0], n_out=1)
+
+	stim_train = stim_train.values
+	stim_test = stim_test.values
 
 	# keras expects the time series as [samples, timesteps, features]
 	stim_train = stim_train.reshape((stim_train.shape[0], stim_train.shape[1], 1))
 	stim_test = stim_test.reshape((stim_test.shape[0], stim_test.shape[1], 1))
 
-	return stim_train, stim_test, resp_train, resp_test
+	return stim_train, stim_test, resp_train, resp_test, scaled_train, scaled_test
 
 
 def preprocess_groups(stim, response, input_shape):

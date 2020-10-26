@@ -66,3 +66,48 @@ def load_mean_psth(file, cell):
 
 	return stim, resp
 
+def read_orn_fr(filename, type='pulses'):
+	dat = io.loadmat(filename)
+
+	if type == 'pulses':
+		responses = np.zeros((30*1000, 7))
+		for i in range(7):
+			responses[:, i] = dat['orn_responses'][i][0].squeeze()
+	elif type == 'chirps':
+		responses = np.zeros((35 * 1000, 2))
+		responses[:, 0] = dat['orn_responses'][7][0].squeeze()
+		responses[:, 1] = dat['orn_responses'][8][0].squeeze()
+
+	return responses
+
+def bin_spikes(x, size, dt):
+	# chop off pre and post
+	sps = (filter(lambda num: (num >= 4 and num < size*dt), x))
+	sps = list(sps)
+
+	# subtract 5 from every element in sps so every spTime is relative to 0 and not 5
+	sps = [list(map(lambda x: x - 4, sps_)) for sps_ in sps]
+
+	return np.histogram(sps, np.arange(0.5, size-(4*dt) + 1) * dt - dt)[0]
+
+def load_concatenatedlpvm_spike_data(filename):
+	dat = io.loadmat(filename)
+
+	dt = 0.001
+
+	binfun = lambda t: int(t / 0.001) - (t == 4)
+	lpvm = dat['data']['lpvm'][0][0][0]
+	sptimes = dat['data']['sptimes'][0][0][0]
+	input = []
+	output = []
+	for i, tr in enumerate(lpvm):
+		tr = tr[range(binfun(4) + 1, binfun(len(tr)*dt))]
+
+		input = np.concatenate((input, tr), axis=None)
+
+		sps = bin_spikes(sptimes[i], len(tr), dt)
+
+		sps = np.array(sps).T
+		output = np.concatenate((output, sps), axis=None)
+
+	return input, output
