@@ -3,7 +3,7 @@ from scipy import sparse
 import scipy.io as io
 from sklearn.impute import KNNImputer
 
-def load_spk_times(stim_, response, start, finish):
+def load_spk_times(stim_, response):
 	'''
 	load stimulus and spike raster with only the relevant stimulus part of the trial
 	:param stim: column data
@@ -15,18 +15,25 @@ def load_spk_times(stim_, response, start, finish):
 	spikes = io.loadmat(response)
 	# spikes = np.genfromtxt(response, delimiter='\t')
 
-	binfun = lambda t: int(t / 0.001) - (t == start)
-	stim = stim[range(binfun(start)+1, binfun(finish))]
+	dt = 0.001
+	start = 4.
+	binfun = lambda t: int(t / dt) - (t == start)
+	stim = stim[range(binfun(start), binfun(len(stim) * dt))]
 
 	spTimes = spikes['spTimes'].squeeze()
 
-	# chop off pre and post
-	sps = [list(filter(lambda num: (num >= start and num < finish), spTimes_.squeeze())) for spTimes_ in spTimes]
+	input = []
+	output = []
+	for i, tr in enumerate(spTimes):
+		input = np.concatenate((input, stim), axis=None)
 
-	# subtract 5 from every element in sps so every spTime is relative to 0 and not 5
-	sps = [list(map(lambda x: x - start, sps_)) for sps_ in sps]
+		sps = bin_spikes(tr, len(stim), 0.001)
 
-	return stim, sps
+		sps = np.array(sps).T
+		output = np.concatenate((output, sps), axis=None)
+
+
+	return input, output
 
 
 def load_behavior(data, start, finish, param, fs):
@@ -94,14 +101,14 @@ def load_concatenatedlpvm_spike_data(filename):
 	dat = io.loadmat(filename)
 
 	dt = 0.001
-
-	binfun = lambda t: int(t / 0.001) - (t == 4)
+	start = 4
+	binfun = lambda t: int(t / 0.001) - (t == start)
 	lpvm = dat['data']['lpvm'][0][0][0]
 	sptimes = dat['data']['sptimes'][0][0][0]
 	input = []
 	output = []
 	for i, tr in enumerate(lpvm):
-		tr = tr[range(binfun(4) + 1, binfun(len(tr)*dt))]
+		tr = tr[range(binfun(start), binfun(len(tr)*dt))]
 
 		input = np.concatenate((input, tr), axis=None)
 
@@ -111,3 +118,8 @@ def load_concatenatedlpvm_spike_data(filename):
 		output = np.concatenate((output, sps), axis=None)
 
 	return input, output
+
+
+
+
+

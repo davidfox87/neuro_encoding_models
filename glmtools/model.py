@@ -38,23 +38,25 @@ class GLM:
 		nx = len(stim) 			# must have a second dimension for convolve2d to word
 		_, nf = self.k_.shape
 
-		a = np.concatenate((np.zeros(nf - 1), stim), axis=None)
-		b = np.rot90(self.k_, k=2)
-		istm = signal.convolve2d(np.asarray([a]), b, mode='valid') + self.dc_
-		istm = istm.squeeze()
+		a = np.concatenate((np.zeros(len(self.k_) - 1), stim), axis=None)
+		istm = np.convolve(stim.squeeze(), np.flipud(self.k_.squeeze()), mode='full')
+		istm = istm[:slen] + self.dc_
 
 		# trim off the extra zeros afterward
-		itot = np.concatenate((np.copy(istm), np.zeros_like(self.h_)))			# this will be the total filter output after postspike filter is added
+		itot = np.concatenate((np.copy(istm.squeeze()), np.zeros_like(self.h_)))			# this will be the total filter output after postspike filter is added
 		hcurr = np.zeros_like(itot)
 
 		sps = np.zeros_like(itot)
+
+		refreshRate = 1000 / dt
+
 
 		# loop through all times
 		for iinxt in range(len(istm)):
 			rrnxt = nlfun(itot[iinxt])			# pass through nonlinear function
 
 			# if our current filter output passed through exp nonlinerity is not greater than random number don't spike
-			if np.random.rand() < (1-np.exp(-rrnxt/1000)):
+			if np.random.rand() < (1-np.exp(-rrnxt)):
 				ispk = iinxt
 				sps[ispk] = 1
 

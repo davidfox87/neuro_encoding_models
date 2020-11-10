@@ -14,11 +14,16 @@ if __name__ == "__main__":
 
 	# name of behavior for which we want to extract the temporal stim filter
 	behavior_par = "vmoves"
-
+	# behavior_par = "angvturns"
+	# behavior_par = "vymoves"
 	# load behavior from MATLAB .mat file
 	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
+	response = response.mean(axis=1)
+	stim = stim[:, 0]
 
-	stim = normalize(stim)
+	stim = stim.reshape((len(stim), 1))
+	response = response.reshape((len(stim), 1))
+
 	# make an Experiment object
 	expt = Experiment(0.02, 25, stim=stim, response=response)
 
@@ -26,30 +31,34 @@ if __name__ == "__main__":
 	expt.registerContinuous('stim')
 
 	# initialize design spec with one trial
-	trial_inds = list(range(response.shape[1]))
-	dspec = DesignSpec(expt, trial_inds)
+	# trial_inds = list(range(response.shape[1]))
+	dspec = DesignSpec(expt, [0])
 
 	# make a set of basis functions
 	Fs = 50
-	nkt = 5*Fs
-	cos_basis = RaisedCosine(100, 4, 1, 'stim')
-	cos_basis.makeNonlinearRaisedCosStim(expt.dtSp, [5, 50], 1, nkt) # first and last peak positions,
+	nkt = 12*Fs
+	cos_basis = RaisedCosine(100, 7, 1, 'stim')
+	cos_basis.makeNonlinearRaisedCosStim(0.1, [1, round(nkt / 1.2)], 1, nkt)  # first and last peak positions,
 	dspec.addRegressorContinuous(basis=cos_basis)
 
 	# compile a design matrix using all trials
 	dm, X, y = dspec.compileDesignMatrixFromTrialIndices()
 
+	# this is our design matrix
+	plt.imshow(X @ cos_basis.B.T, extent=[-12, 0, 0, 1250],
+              interpolation='nearest', aspect='auto')
+
 	# find weights in the new basis that minimizes the difference between the projection of the stimulus onto
 	# this basis and the target time series
-	prs = np.random.normal(0, .2, 5)
-	res = minimize(x_proj, prs, args=(X, y),
+	prs = np.random.normal(0, .1, cos_basis.nbases + 1)
+	res = minimize(x_proj, prs, args=(X, y, cos_basis.nbases),
 										options={'maxiter': 1000, 'disp': True})
 
 	theta = res['x']
 
 	# convert back to the original basis to get nkt filter weights.
 	# Parameters are returned in a dict
-	d = dm.get_regressor_from_output(theta[1:])
+	d = dm.get_regressor_from_output(theta)
 
 	dc = theta[0]
 	k = d['stim'][1]
@@ -64,6 +73,9 @@ if __name__ == "__main__":
 	data = {'name': behavior_par,
 			'k': k,
 			'dc': dc}
+
+	plt.figure()
+	plt.plot(kt, k)
 
 	file_name = behavior_par + "_filter.pkl"
 	output = open(file_name, 'wb')

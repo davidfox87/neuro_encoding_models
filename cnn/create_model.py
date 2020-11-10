@@ -33,7 +33,7 @@ def load_model(train_x, trained=False, weight_path='', neurons=64, dropout_rate=
 
 	x = RepeatVector(1)(x)
 	x = (LSTM(200, activation='relu', return_sequences=True))(x)
-	x = TimeDistributed(Dense(100, activation='relu', activity_regularizer=l2(0.001)))(x)
+	x = TimeDistributed(Dense(100, activation='relu'))(x)
 	x = TimeDistributed(Dense(n_outputs))(x)
 
 	predictions = Activation('linear')(x)

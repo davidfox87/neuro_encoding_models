@@ -97,15 +97,15 @@ def get_gsyn(fr: np.ndarray, pars: Dict[str, float]):
 	# implement presynaptic inhibition here
 
 	s = fr / 1000				# spike rate in spikes / ms
-	a = 1 / 400. * np.arange(500) * np.exp(1 - np.arange(500) / 400.)
-	a = a/np.sum(a)
+	#a = 1 / 400. * np.arange(500) * np.exp(1 - np.arange(500) / 400.)
+	#a = a/np.sum(a)
 	#
 	# a = np.expand_dims(a, axis=0)
 	# s = np.expand_dims(s, axis=0)
-	inh = np.convolve(fr, a, mode='same')
+	#inh = np.convolve(fr, a, mode='same')
 	# inh = sameconv(s, a)
 
-	s = s / (1 + 0.000001 * inh)
+	#s = s / (1 + 0.000001 * inh)
 
 	f1 = pars['f1']
 	tau_d1 = pars['tau_d1']
@@ -134,7 +134,7 @@ def get_gsyn(fr: np.ndarray, pars: Dict[str, float]):
 		a2[i + 1] = a2[i] + (-f2 * s[i] * a2[i] + (1 - a2[i]) / tau_d2) 	# depletion
 		c2[i + 1] = c2[i] + (g2 * a2[i] * s[i] - c2[i] / tau_c2) 			# conductance
 
-	return c1.squeeze(), c2.squeeze(), inh
+	return c1.squeeze(), c2.squeeze()
 
 
 def obj_fun(theta, target_psth: np.ndarray):
@@ -226,7 +226,7 @@ def get_filtered_output(orn_fr, g1=20, dur=30):
 
 	return filtered_output, v, i_syn
 
-def run(orn_fr, g1, g2, iapp, dur=30):
+def run(orn_fr, g1, g2, iapp, dc, dur=30):
 	"""
 
 	:param theta: parameter vector that contains the values of g1 and g2 that we want to optimize
@@ -235,17 +235,17 @@ def run(orn_fr, g1, g2, iapp, dur=30):
 	"""
 	pars = default_pars(T=dur, dt=0.1, g1=g1, g2=g2)
 
-	g1, g2, inh = get_gsyn(orn_fr, pars)
+	g1, g2 = get_gsyn(orn_fr, pars)
 	g_syn = g1 + g2
 
 	v, i_syn = run_passive_cell(pars, g_syn, iapp)
 
 	# read in pars for GLM using pickle
-	pkl_file = open('../models/glmpars_vm_to_spiking.pkl', 'rb')
+	pkl_file = open('../results/vm_to_spiking_filters/average_GLM_pars_PN.pkl', 'rb')
 	glmpars = pickle.load(pkl_file)
-	k = glmpars['k']
-	h = glmpars['h']
-	dc = glmpars['dc']
+	k = glmpars['k'][1]
+	h = glmpars['h'][1]
+	#dc = glmpars['dc']
 	vmin = glmpars['v_min']
 	vmax = glmpars['v_max']
 
@@ -267,7 +267,7 @@ def run(orn_fr, g1, g2, iapp, dur=30):
 
 	model_psth = get_psth(sptrain, 100, 100)
 
-	return v, model_psth, istm, hcurr, sptrain, g1, g2, i_syn, inh
+	return v, model_psth, istm, hcurr, sptrain, g1, g2, i_syn
 
 
 def freqz(tr):

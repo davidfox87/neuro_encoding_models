@@ -108,12 +108,13 @@ def neg_log_lik(theta: np.ndarray, ntfilt: int,
 	nzidx = np.nonzero(y)[0]
 	rate = np.exp(itot)
 
-	#return -(y @ np.log(rate) - rate.sum())
-	Trm0 = np.sum(rate) * 0.001				# non-spike term
-	Trm1 = -np.sum(itot[nzidx])		# spike term
-	logli = Trm1 + Trm0
+	return -(np.dot(y, np.log(rate)) - rate.sum())
+	#Trm0 = np.sum(rate) * 0.001				# non-spike term
+	#Trm1 = -np.sum(itot[nzidx])		# spike term
+	#logli = Trm1 + Trm0
+	#logli = -np.dot(y.T, itot) + np.sum(rate)
 
-	return logli
+	#return logli
 
 
 def neg_log_posterior(prs, negloglifun, Cinv):
@@ -177,19 +178,20 @@ def poisson(wts, x, y):
 	return negloglik
 
 
-def x_proj(wts, x, y):
+def x_proj(wts, x, y, ntstim):
 
-	xproj = x @ wts[1:] + wts[0]
+	xproj = x @ wts[1:ntstim+1] + wts[0]
 
 	return mean_squared_error(y, xproj)
 
 
 
 def sameconv(x, f):
-	x = np.asarray([x.T])
-	f = np.asarray([f.T])
-	[xwid, nx] = x.shape
-	[fwid, nf] = f.shape
+	slen = len(x)
+	x = np.convolve(x.squeeze(), np.flipud(f.squeeze()), mode='full')
+	return x[:slen]
+
+
 	a = np.concatenate((np.zeros(nf - 1), x), axis=None)
 	b = np.rot90(f, k=2)
 	res = signal.convolve2d(np.asarray([a]), b, mode='valid')

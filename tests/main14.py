@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
 	# CNN hyperparameters
 	batch_size = 32
-	epochs = 100
+	epochs = 200
 	input_shape = [800, 1]
 	print_summary = False
 
@@ -198,13 +198,6 @@ if __name__ == "__main__":
 	time_train = np.arange(nt_train) * 0.02
 	time_test = np.arange(nt_train, nt) * 0.02
 
-	plt.figure()
-	_pred_train = saved_model.predict(stim_train.squeeze())
-	_pred_test = saved_model.predict(stim_test.squeeze())
-	plt.plot(time_train, resp_train.squeeze())
-	plt.plot(time_test, resp_test.squeeze())
-	plt.plot(time_train, _pred_train.squeeze().squeeze())
-	plt.plot(time_test, _pred_test.squeeze().squeeze())
 
 	plt.figure()
 	# plot training curve for rmse

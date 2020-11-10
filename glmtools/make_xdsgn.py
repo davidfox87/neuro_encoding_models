@@ -3,6 +3,8 @@ from scipy.linalg import toeplitz, hankel
 from scipy import stats, signal
 from basisFactory.bases import Basis, RaisedCosine
 from tqdm import tqdm
+from sklearn.preprocessing import StandardScaler
+
 
 
 class Regressor:
@@ -36,25 +38,32 @@ class Regressor:
 		return Xstim
 
 	def sameconv(self, x, f):
-		x = np.asarray([x.T])
-		f = np.asarray([f.T])
-		[xwid, nx] = x.shape
-		[fwid, nf] = f.shape
-		a = np.concatenate((np.zeros(nf - 1), x), axis=None)
-		b = np.rot90(f, k=2)
-		res = signal.convolve2d(np.asarray([a]), b, mode='valid')
-		return res.squeeze()
+		nt = len(x)
+		f = np.flipud(f)
+		#a = np.concatenate((np.zeros(len(f) - 1), x), axis=None)
+		res = np.convolve(x, f, mode='full')
+		return res[:nt]
 
-	def spikefilt(self, sps, basis):
-		nt, nb = basis.shape
-		slen = len(sps)
-		#sps_ = np.asarray([sps])
-		sps_ = sps.reshape(-1, 1)
-		# Do convolution and remove extra bins
-		res = signal.convolve2d(sps_, basis, mode='full')
-		Xsp = np.vstack((np.zeros((1, nb)), res[:-nt, :]))
+
+	def spikefilt(self, sps, bases):
+		# convolve the spike train with each basis function one at a time
+		spklen = len(sps)
+		tb, nkt = bases.shape
+
+		Xsp = np.zeros((spklen, nkt))
+
+		# convolve the spikes with each column of the basis matrix
+		for i in range(nkt):
+			Xsp[:, i] = self.sameconvspike(sps, bases[:, i])
 		return Xsp
 
+	def sameconvspike(self, x, f):
+		# (B is flipped as in standard convolution).
+		nt = len(x)
+		#f = np.flipud(f)
+		# x = np.concatenate((np.zeros(len(f) - 1), x), axis=None)
+		res = np.convolve(x, f, mode='full')  # if x is big, then np.convolve will do convolution in the frequency domain
+		return res[:nt]
 
 class RegressorPoint(Regressor):
 	def __init__(self, name, bins_after, bins_before=0):
@@ -353,9 +362,12 @@ class DesignSpec:
 			Xfull = np.concatenate([Xfull, X], axis=0)
 			Yfull = np.concatenate([Yfull, self.expt.response[:, tr]])
 
-		# if ridge regression and cross-validation, then we need to add intercept column
-		# Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
 
+
+		# if ridge regression and cross-validation, then we need to add intercept column
+		Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
+		# scaler = StandardScaler()
+		# Xfull = scaler.fit_transform(Xfull)
 		return dm, Xfull, Yfull
 
 
