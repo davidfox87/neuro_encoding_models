@@ -324,7 +324,7 @@ class DesignSpec:
 
 		self.regressors.append(r)
 
-	def compileDesignMatrixFromTrialIndices(self):
+	def compileDesignMatrixFromTrialIndices(self, bias):
 		expt = self.expt
 		dt = self.dt_
 
@@ -365,7 +365,8 @@ class DesignSpec:
 
 
 		# if ridge regression and cross-validation, then we need to add intercept column
-		# Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
+		if bias:
+			Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
 		# scaler = StandardScaler()
 		# Xfull = scaler.fit_transform(Xfull)
 		return dm, Xfull, Yfull

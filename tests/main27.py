@@ -1,22 +1,12 @@
-
-import utils.read as io
 import numpy as np
 from matplotlib import pyplot as plt
 from glmtools.make_xdsgn import Experiment, DesignSpec
 from scipy.optimize import minimize
-from glmtools.fit import neg_log_lik
-import pickle
 from glmtools.model import GLM
 from basisFactory.bases import RaisedCosine
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from scipy.sparse import spdiags
-from scipy.linalg import block_diag
-from sklearn.model_selection import train_test_split
 from glmtools.fit import neg_log_lik, mapfit_GLM
-from models.synapse import get_psth
 from utils.read import load_spk_times2
-from sklearn.linear_model import Ridge
-from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 
 """
 Refer to Pillow et al., 2005 for more info.
@@ -188,7 +178,6 @@ if __name__ == "__main__":
 	ax[0].set_xlim(-2, 0)
 
 	# make a prediction on the average response
-
 	glm = GLM(dspec.expt.dtSp, k, h, dc)
 	nsims = 10
 	glm_sims = np.zeros((sps.shape[0], nsims))
@@ -197,7 +186,6 @@ if __name__ == "__main__":
 		tsp, sps, itot, istm = glm.simulate(stim[:, 0])
 		glm_sptimes[:, i] = sps * np.arange(len(sps)) * dt
 		glm_sims[:, i] = sps
-
 
 	t = np.arange(0, len(stim)) * dt
 	fig, ax = plt.subplots(3, 1, sharex=True)
