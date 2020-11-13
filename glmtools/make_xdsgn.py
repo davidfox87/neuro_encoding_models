@@ -324,7 +324,7 @@ class DesignSpec:
 
 		self.regressors.append(r)
 
-	def compileDesignMatrixFromTrialIndices(self, bias):
+	def compileDesignMatrixFromTrialIndices(self, bias=0):
 		expt = self.expt
 		dt = self.dt_
 

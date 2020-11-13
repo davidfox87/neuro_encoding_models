@@ -65,8 +65,8 @@ if __name__ == "__main__":
 	test_dspec.addRegressorContinuous(basis=stim_basis)
 
 	# compile a design matrix using all trials
-	dm, X_train, y_train = train_dspec.compileDesignMatrixFromTrialIndices(bias=1)
-	dm, X_test, y_test = train_dspec.compileDesignMatrixFromTrialIndices(bias=1)
+	dm, X_train, y_train = train_dspec.compileDesignMatrixFromTrialIndices()
+	dm, X_test, y_test = train_dspec.compileDesignMatrixFromTrialIndices()
 
 
 	# this is our design matrix
