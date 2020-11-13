@@ -97,15 +97,15 @@ def get_gsyn(fr: np.ndarray, pars: Dict[str, float]):
 	# implement presynaptic inhibition here
 
 	s = fr / 1000				# spike rate in spikes / ms
-	#a = 1 / 400. * np.arange(500) * np.exp(1 - np.arange(500) / 400.)
-	#a = a/np.sum(a)
-	#
-	# a = np.expand_dims(a, axis=0)
-	# s = np.expand_dims(s, axis=0)
-	#inh = np.convolve(fr, a, mode='same')
-	# inh = sameconv(s, a)
-
-	#s = s / (1 + 0.000001 * inh)
+	# a = 1 / 400. * np.arange(500) * np.exp(1 - np.arange(500) / 400.)
+	# a = a/np.sum(a)
+	# #
+	# # a = np.expand_dims(a, axis=0)
+	# # s = np.expand_dims(s, axis=0)
+	# frlen = len(fr)
+	# fr = np.convolve(fr, np.flipud(a), mode='full')
+	# fr = fr[:frlen]
+	# s = s / (1 + 0.1 * fr)
 
 	f1 = pars['f1']
 	tau_d1 = pars['tau_d1']
@@ -191,40 +191,6 @@ def obj_fun(theta, target_psth: np.ndarray):
 
 	return rmse  # goal is to minimize this
 
-def sameconv(x, f):
-	'''
-	This function takes an input vector and convolves it with the filter f
-	The filter f is flipped and slid along x. valid argument used for convolve so
-	x is padded with nf zeros at the beginning
-	:param x: stimulus vector
-	:param f: convolutional filter
-	:return: filtered output
-	'''
-	a = np.concatenate((np.zeros(f.shape[1] - 1), x), axis=None)
-	b = np.rot90(f, k=2)
-	res = signal.convolve2d(np.asarray([a]), b, mode='valid')
-	return res.squeeze()
-
-def get_filtered_output(orn_fr, g1=20, dur=30):
-	pars = default_pars(T=dur, dt=0.1, g1=g1)
-
-	g1, g2 = get_gsyn(orn_fr, pars)
-	g_syn = g1 + g2
-
-	v, i_syn = run_passive_cell(pars, g_syn)
-
-	# read in pars for GLM using pickle
-	pkl_file = open('../models/glmpars_vm_to_spiking.pkl', 'rb')
-	glmpars = pickle.load(pkl_file)
-	k = glmpars['k']
-	h = glmpars['h']
-
-	k = np.expand_dims(k, 0)
-
-	# convolve v with k to get filter output
-	filtered_output = sameconv(v, k)
-
-	return filtered_output, v, i_syn
 
 def run(orn_fr, g1, g2, iapp, dc, dur=30):
 	"""

@@ -268,7 +268,7 @@ class Experiment:
 		# we initialize Experiment object with sptrain and stim
 		# registering adds internal/external regressors to a dictionary to be processed
 		# not every analysis may use all available regressors
-		self.trial['sptrain'] = self.sptimes
+		self.trial['sptrain'] = self.response
 		self._regressortype['sptrain'] = label # check this label, probably sptrain needs to be the value not the key
 
 	def registerContinuous(self, label):
@@ -365,7 +365,7 @@ class DesignSpec:
 
 
 		# if ridge regression and cross-validation, then we need to add intercept column
-		Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
+		# Xfull = np.column_stack([np.ones_like(Yfull), Xfull])
 		# scaler = StandardScaler()
 		# Xfull = scaler.fit_transform(Xfull)
 		return dm, Xfull, Yfull

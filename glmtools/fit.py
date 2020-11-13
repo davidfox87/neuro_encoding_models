@@ -180,7 +180,7 @@ def poisson(wts, x, y):
 
 def x_proj(wts, x, y, ntstim):
 
-	xproj = x @ wts[1:ntstim+1] + wts[0]
+	xproj = x @ wts
 
 	return mean_squared_error(y, xproj)
 

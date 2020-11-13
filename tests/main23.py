@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
 	# name of behavior for which we want to extract the temporal stim filter
 	behavior_par = "vmoves"
-	#behavior_par = "angvturns"
+	# behavior_par = "angvturns"
 	#behavior_par = "vymoves"
 	# load behavior from MATLAB .mat file
 	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
 	# split into train and test
 	stim_train, stim_test, resp_train, resp_test = train_test_split(stim, response,
-																	test_size=0.1,
+																	test_size=0.001,
 																	shuffle=False,
 																	random_state=42)
 	dt = 0.02
@@ -56,13 +56,13 @@ if __name__ == "__main__":
 	Fs = 50
 	nkt = 14 * Fs
 	nkt = 12 * Fs
-	cos_basis = RaisedCosine(100, 10, 1, 'stim')
-	cos_basis.makeNonlinearRaisedCosStim(0.1, [1, round(nkt / 1.2)], 1, nkt)  # first and last peak positions,
+	stim_basis = RaisedCosine(100, 10, 1, 'stim')
+	stim_basis.makeNonlinearRaisedCosStim(0.1, [1, round(nkt / 1.2)], 10, nkt)  # first and last peak positions,
 	plt.figure()
-	plt.plot(cos_basis.B)
+	plt.plot(stim_basis.B)
 
-	train_dspec.addRegressorContinuous(basis=cos_basis)
-	test_dspec.addRegressorContinuous(basis=cos_basis)
+	train_dspec.addRegressorContinuous(basis=stim_basis)
+	test_dspec.addRegressorContinuous(basis=stim_basis)
 
 	# compile a design matrix using all trials
 	dm, X_train, y_train = train_dspec.compileDesignMatrixFromTrialIndices()
@@ -70,23 +70,31 @@ if __name__ == "__main__":
 
 
 	# this is our design matrix
-	plt.imshow(X_train[:, 1:] @ cos_basis.B.T, extent=[-12, 0, 0, 1250],
+	plt.imshow(X_train[:, 1:] @ stim_basis.B.T, extent=[-12, 0, 0, 1250],
               interpolation='nearest', aspect='auto')
 
-	model = Ridge()
-	alphas = np.logspace(0, 30, num=20, base=2)
-	param_search = [{'alpha': alphas}]
+	prs = np.random.normal(0, .01, stim_basis.nbases + 1)
 
-	tscv = TimeSeriesSplit(n_splits=5)
-	grid_result = GridSearchCV(estimator=model, cv=tscv,
-							   param_grid=param_search, scoring='neg_mean_squared_error', n_jobs=-1)
+	# pars = 5 + 8
+	res = minimize(x_proj, prs, args=(X_train, y_train, stim_basis.nbases),
+				   options={'disp': True})
 
-	grid_result.fit(X_train, y_train)
-	print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+	w = res['x']
 
-	# using this ridge penalty value, get the mse between resp_test and ridge prediction
-	model = Ridge(alpha=grid_result.best_params_['alpha']).fit(X_test, y_test)
-	w = model.coef_
+	# model = Ridge()
+	# alphas = np.logspace(0, 30, num=20, base=2)
+	# param_search = [{'alpha': alphas}]
+	#
+	# tscv = TimeSeriesSplit(n_splits=5)
+	# grid_result = GridSearchCV(estimator=model, cv=tscv,
+	# 						   param_grid=param_search, scoring='neg_mean_squared_error', n_jobs=-1)
+	#
+	# grid_result.fit(X_train, y_train)
+	# print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+	#
+	# # using this ridge penalty value, get the mse between resp_test and ridge prediction
+	# model = Ridge(alpha=grid_result.best_params_['alpha']).fit(X_test, y_test)
+	# w = model.coef_
 
 	d = dm.get_regressor_from_output(w)
 
@@ -96,31 +104,31 @@ if __name__ == "__main__":
 	k = d['stim'][1]
 	kt = d['stim'][0] * dt
 
-	xx, fnlin, rawfilteroutput = fit_nlin_hist1d(stim_test, resp_test, k, dt, 20)
-	basis_score = r2_score(resp_test, fnlin(rawfilteroutput))
-	basis_mse = mean_squared_error(resp_test, fnlin(rawfilteroutput))
-
-	print('The r2 on the held-out test set is {}'.format(basis_score))
-	print('The mse on the held-out test set is {}'.format(basis_mse))
+	# xx, fnlin, rawfilteroutput = fit_nlin_hist1d(stim_test, resp_test, k, dt, 20)
+	# basis_score = r2_score(resp_test, fnlin(rawfilteroutput))
+	# basis_mse = mean_squared_error(resp_test, fnlin(rawfilteroutput))
+	#
+	# print('The r2 on the held-out test set is {}'.format(basis_score))
+	# print('The mse on the held-out test set is {}'.format(basis_mse))
 
 
 	# now fit using this ridge on all the data
-	dspec = make_dspec(stim, response, dt)
-	dspec.addRegressorContinuous(basis=cos_basis)
-
-	# compile a design matrix using all trials
-	dm, X_, y_ = dspec.compileDesignMatrixFromTrialIndices()
-	model = Ridge(alpha=grid_result.best_params_['alpha']).fit(X_, y_)
-
-	w = model.coef_
-
-	d = dm.get_regressor_from_output(w)
+	# dspec = make_dspec(stim, response, dt)
+	# dspec.addRegressorContinuous(basis=stim_basis)
+	#
+	# # compile a design matrix using all trials
+	# dm, X_, y_ = dspec.compileDesignMatrixFromTrialIndices()
+	# model = Ridge(alpha=grid_result.best_params_['alpha']).fit(X_, y_)
+	#
+	# w = model.coef_
+	#
+	# d = dm.get_regressor_from_output(w)
 
 	# convert back to the original basis to get nkt filter weights.
 	# Parameters are returned in a dict
-	dc = w[0]
-	k = d['stim'][1]
-	kt = d['stim'][0] * dt
+	# dc = w[0]
+	# k = d['stim'][1]
+	# kt = d['stim'][0] * dt
 
 	# output GLM parameters: k, dc
 	data = {'name': behavior_par,

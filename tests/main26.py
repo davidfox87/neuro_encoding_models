@@ -1,5 +1,3 @@
-
-
 import utils.read as io
 import numpy as np
 from matplotlib import pyplot as plt
@@ -22,9 +20,9 @@ if __name__ == "__main__":
 	v_min = []
 	v_max = []
 
-	cells = [1, 2, 3, 4, 5, 7, 9]
+	cells = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 	for i in cells:
-		pkl_file = open('../results/vm_to_spiking_filters/glmpars_vm_to_spiking_PN' + str(i) + '.pkl', 'rb')
+		pkl_file = open('../results/stim_to_spiking_filters/ORN/glmpars_stim_to_spiking_ORN' + str(i) + '.pkl', 'rb')
 		glmpars = pickle.load(pkl_file)
 		stim_filter.append(glmpars['k'][1])
 		postspike_filter.append(glmpars['h'][1])
@@ -75,20 +73,20 @@ if __name__ == "__main__":
 	ax[1, 1].fill_between(ht, mu2 + sigma2, mu2 - sigma2, facecolor='blue', alpha=0.5)
 	ax[1, 1].axhline(0, color=".2", linestyle="--", zorder=1)
 
-	figure.suptitle('GLM parameters fit to 9 different PN recordings across all trials/stimuli')
+	figure.suptitle('GLM parameters fit to 13 different ORN recordings across all trials/stimuli')
 
-	ax[0, 0].set_xlim(-0.15, 0)
-	ax[1, 0].set_xlim(-0.15, 0)
-	ax[0, 1].set_xlim(0, 0.3)
-	ax[1, 1].set_xlim(0, 0.3)
+	# ax[0, 0].set_xlim(-0.15, 0)
+	# ax[1, 0].set_xlim(-0.15, 0)
+	# ax[0, 1].set_xlim(0, 0.3)
+	# ax[1, 1].set_xlim(0, 0.3)
 	ax[0, 0].set_xticklabels([])
 	ax[0, 1].set_xticklabels([])
 
 	ax[1, 0].set_xlabel('Time before spike (s)')
 	ax[1, 1].set_xlabel('Time after spike (s)')
-	ax[0, 0].set_title('membrane potential Filter across cells')
+	ax[0, 0].set_title('Stimulus Filter across cells')
 	ax[0, 1].set_title('post-spike Filter across cells')
-	ax[1, 0].set_title('Average membrane potential Filter \n(mean +/- sd)')
+	ax[1, 0].set_title('Average Stimulus Filter \n(mean +/- sd)')
 	ax[1, 1].set_title('Average post-spike Filter \n(mean +/- sd)')
 
 	plt.tight_layout()
@@ -114,7 +112,7 @@ if __name__ == "__main__":
 			'v_min': v_min.mean(),
 			'v_max': v_max.mean()}
 
-	output = open('../results/vm_to_spiking_filters/average_GLM_pars_PN.pkl', 'wb')
+	output = open('../results/stim_to_spiking_filters/ORN/average_GLM_pars_ORN.pkl', 'wb')
 
 	# pickle dictionary using protocol 0
 	pickle.dump(data, output)

@@ -33,16 +33,14 @@ def make_dspec(stim, response, dt):
 	expt.registerContinuous('stim')
 	# register spike regressor
 
-	expt.register_spike_train('sptrain')
+	expt_test.register_spike_train('sptrain')
 	# initialize design spec with one trial
 	return DesignSpec(expt, [0])
 
 if __name__ == "__main__":
-	# something wrong with cell 6, 8 sometimes the fitting doesn't hone in on the solution...run again
-	# check 4
-	cell_idx = 1
-	cell = "pn" + str(cell_idx)
-	response = '../datasets/spTimesPNControl/{}SpTimes_reverseChirp.mat'.format(cell, '.txt')
+	cell_idx = 13
+	cell = "orn" + str(cell_idx)
+	response = '../datasets/spTimesORNControl/{}SpTimes_reverseChirp.mat'.format(cell, '.txt')
 	stim, sps = load_spk_times('../datasets/stim.txt', response)
 
 
@@ -76,12 +74,12 @@ if __name__ == "__main__":
 	# make a set of basis functions
 	fs = 1. / dt
 	nkt = int(2. * fs)
-	stim_basis = RaisedCosine(100, 6, 1, 'stim')
+	stim_basis = RaisedCosine(100, 7, 1, 'stim')
 	stim_basis.makeNonlinearRaisedCosStim(.1, [.1, round(nkt/1.2)], 10, nkt)  # first and last peak positions,
 	dspec_train.addRegressorContinuous(basis=stim_basis)
 	dspec_test.addRegressorContinuous(basis=stim_basis)
 
-	spike_basis = RaisedCosine(100, 3, 1, 'sphist')
+	spike_basis = RaisedCosine(100, 5, 1, 'sphist')
 	spike_basis.makeNonlinearRaisedCosPostSpike(0.1, [.1, 10], 1, 0.01)
 	dspec_train.addRegressorSpTrain(basis=spike_basis)
 	dspec_test.addRegressorSpTrain(basis=spike_basis)
@@ -137,8 +135,7 @@ if __name__ == "__main__":
 	neg_train_func = lambda prs:neg_log_lik(prs, stim_basis.nbases, X_train, y_train, 1)
 	neg_test_func = lambda prs:neg_log_lik(prs, stim_basis.nbases, X_test, y_test, 1)
 
-	#find MAP estimate for each value of ridge parameter
-
+	#findMAPestimateforeachvalueofridgeparameter
 	plt.figure()
 	print('====Doing grid search for ridge parameter====\n')
 	wmap=theta_ml
@@ -171,11 +168,8 @@ if __name__ == "__main__":
 	h = d['sptrain'][1]
 	ht = d['sptrain'][0]*dt
 
-
-
-
-	# Select best ridge param and fit on all data (meaning on all trials).
-	# make another design matrix which has all the data not just train and test
+	# Select best ridge param and fit on all data.
+	# make another design matrix which has all the data
 	imin = np.argmin(negLTest)
 	wmap = mapfit_GLM(wmap, stim_basis.nbases, X_train, y_train, lamvals[imin]*Imat, 1)
 
@@ -197,11 +191,6 @@ if __name__ == "__main__":
 	ax[0].set_title('Stimulus Filter')
 	ax[1].set_title('post-spike Filter')
 
-	fig, ax = plt.subplots(2, 1)
-	t_basis = np.arange(-nkt, 0) / fs
-	t_basis = np.tile(t_basis.reshape(-1, 1), (1, stim_basis.nbases))
-	ax[0].plot(t_basis, stim_basis.B)
-	ax[1].plot(stim_basis.centers / fs, abs(wmap[1:stim_basis.nbases + 1]))
 	# # output GLM parameters: k, h, dc
 	data = {'k': (kt, k),
 			'h': (ht, h),
@@ -209,7 +198,7 @@ if __name__ == "__main__":
 			'v_min': scaler.data_min_,
 			'v_max': scaler.data_max_}
 
-	output = open('../results/stim_to_spiking_filters/PN/glmpars_stim_to_spiking_PN' + str(cell_idx) + '.pkl', 'wb')
+	output = open('../results/stim_to_spiking_filters/ORN/glmpars_stim_to_spiking_ORN' + str(cell_idx) + '.pkl', 'wb')
 
 	# pickle dictionary using protocol 0
 	pickle.dump(data, output)
@@ -218,6 +207,7 @@ if __name__ == "__main__":
 
 	tsp, sps, itot, istm = glm.simulate(stim_train[:int(70 * fs)])
 	sps_ = sps * np.arange(len(sps)) * dt
+	glm = GLM(dspec_train.expt.dtSp, k, h, dc)
 
 	inds = range(int(70 * fs))
 	t = np.arange(0, 70 * fs) / fs
@@ -246,51 +236,3 @@ if __name__ == "__main__":
 	ax[2].plot(t, psth_exp_, label='biological')
 
 	ax[2].legend()
-
-
-
-	#
-	#
-	#
-	# # # output GLM parameters: k, h, dc
-	# data = {'k': (kt, k),
-	# 		'h': (ht, h),
-	# 		'dc': dc,
-	# 		'v_min': scaler.data_min_,
-	# 		'v_max': scaler.data_max_}
-	#
-	# output = open('../results/stim_to_spiking_filters/glmpars_stim_to_spiking_PN' + str(cell_idx) + '.pkl', 'wb')
-	#
-	# # pickle dictionary using protocol 0
-	# pickle.dump(data, output)
-	#
-	# glm = GLM(dspec_train.expt.dtSp, k, h, dc)
-	#
-	# # #for i in range(nsim):
-	# tsp, sps, itot, istm = glm.simulate(stim_train[:int(70 * fs)])
-	# sps_ = sps * np.arange(len(sps)) * dt
-	#
-	# inds = range(int(70 * fs))
-	# t = np.arange(0, 70 * fs) / fs
-	# sptimes = resp_train[:int(70 * fs)] * t
-	#
-	# fig, ax = plt.subplots(3, 1, sharex=True)
-	# ax[0].plot(t, stim_train[inds])
-	#
-	# ax[1].plot(t, resp_train[inds], linewidth=0.5)
-	#
-	# smooth_win = np.hanning(100) / np.hanning(100).sum()
-	# psth_model = np.convolve(sps, smooth_win)
-	# sigrange = np.arange(100 // 2, 100 // 2 + len(sps))
-	# psth_model_ = psth_model[sigrange] * 1000
-	# ax[2].plot(t, psth_model_, label='GLM')
-	# #
-	#
-	# sps_exp = resp_train[inds, 0]
-	# psth_exp = np.convolve(sps_exp, smooth_win, mode='full')
-	# sigrange = np.arange(100 // 2, 100 // 2 + len(sps_exp))
-	# psth_exp_ = psth_exp[sigrange] * 1000
-	# # ax[2].plot(np.arange(0, int(70 * fs - 1/fs)) / 1000., psth_exp_)
-	# ax[2].plot(t, psth_exp_, label='biological')
-	#
-	# ax[2].legend()

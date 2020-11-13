@@ -18,9 +18,8 @@ def plot_model_output(orn_responses, g1_, g2_, iapp, dur, dc):
 
 	cmap = plt.get_cmap('Greys', 8)
 
-
+	fig, ax = plt.subplots(5, 1, sharex=True)
 	for i in range(orn_responses.shape[1]):
-		fig, ax = plt.subplots(5, 1, sharex=True)
 		# fig, ax = plt.subplots(5, 1, sharex=True)
 		vm[:, i], model_pn_responses[:, i], istm, hcurr, sps, g1[:, i], g2[:, i], i_syn[:, i] = synapse.run(
 		 	orn_responses[:, i], g1_, g2_, dc=dc, iapp=iapp, dur=dur)
@@ -63,10 +62,10 @@ if __name__ == "__main__":
 	g2 = 1.8
 
 	control_g1 = 25.
-	iapp_control = -20.
-	iapp_unc13 = -5
-	control_dc = -10.
-	unc13_dc = -8.
+	iapp_control = -27.
+	iapp_unc13 = -3.
+	control_dc = -8.5
+	unc13_dc = -8
 	control_pn_responses = plot_model_output(orn_responses, control_g1, g2, iapp=iapp_control, dur=30., dc=control_dc)
 
 	unc13_g1 = 0
@@ -95,6 +94,8 @@ if __name__ == "__main__":
 	f2_ax0_2.plot(ht, h)
 	f2_ax0_1.plot([kt[0], kt[-1]], [0, 0], '--k')
 	f2_ax0_2.plot([ht[0], ht[-1]], [0, 0], '--k')
+	f2_ax0_1.set_title('Stimulus Filter')
+	f2_ax0_2.set_title('Post-spike Filter')
 
 	f2_ax1 = fig2.add_subplot(spec2[:3, 1])
 	f2_ax2 = fig2.add_subplot(spec2[3:, 1])
@@ -114,8 +115,9 @@ if __name__ == "__main__":
 	cmap = plt.get_cmap('Greys', 8)
 	colors = [cmap(i) for i in range(7, 0, -1)]
 
-	f2_ax1.plot(orn_responses)
-	f2_ax1.set_xlim([4500, 7500])
+	t = np.arange(orn_responses.shape[0]) / fs
+	f2_ax1.plot(t, orn_responses)
+	f2_ax1.set_xlim([4.5, 7.5])
 
 	for i, j in enumerate(f2_ax1.lines):
 		j.set_color(colors[i])
@@ -147,25 +149,27 @@ if __name__ == "__main__":
 	# freq, amp_orn, max_orn, amp_pn_control, max_pn_control = freq[1:], amp_orn[1:], max_orn[1:], amp_pn_control[1:], max_pn_control[1:]
 	# amp_pn_unc13, max_pn_unc13 = amp_pn_unc13[1:], max_pn_unc13[1:]
 
-	f2_ax3.plot(orn_responses[:, 1], linewidth=0.5)
-	f2_ax4.plot(control_pn_responses[:, 1], 'k', linewidth=0.5)
-	f2_ax5.plot(unc13_pn_responses[:, 1], 'm',  linewidth=0.5)
+	t = np.arange(orn_responses.shape[0]) / fs
 
-	f2_ax3.plot(orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
-	f2_ax4.plot(orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
-	f2_ax5.plot(orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
+	f2_ax3.plot(t, orn_responses[:, 1], linewidth=0.5)
+	f2_ax4.plot(t, control_pn_responses[:, 1], 'k', linewidth=0.5)
+	f2_ax5.plot(t, unc13_pn_responses[:, 1], 'm',  linewidth=0.5)
 
-	f2_ax6.plot(orn_responses[:, 1], linewidth=0.5)
-	f2_ax7.plot(control_pn_responses[:, 1], 'k', linewidth=0.5)
-	f2_ax8.plot(unc13_pn_responses[:, 1], 'm', linewidth=0.5)
+	f2_ax3.plot(t, orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
+	f2_ax4.plot(t, orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
+	f2_ax5.plot(t, orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
 
-	f2_ax6.plot(orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
-	f2_ax7.plot(orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
-	f2_ax8.plot(orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
+	f2_ax6.plot(t, orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
+	f2_ax7.plot(t, orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
+	f2_ax8.plot(t, orn_responses[:, 1], color=[0.82, 0.82, 0.82], linewidth=0.5)
 
-	f2_ax6.set_xlim([5000, 7000])
-	f2_ax7.set_xlim([5000, 7000])
-	f2_ax8.set_xlim([5000, 7000])
+	f2_ax7.plot(t, control_pn_responses[:, 1], 'k', linewidth=0.5)
+	f2_ax8.plot(t, unc13_pn_responses[:, 1], 'm', linewidth=0.5)
+
+
+	f2_ax6.set_xlim([6.1, 7])
+	f2_ax7.set_xlim([6.1, 7])
+	f2_ax8.set_xlim([6.1, 7])
 
 	f2_ax9.plot(freq, max_pn_control / max_orn, 'k')
 	f2_ax9.plot(freq, max_pn_unc13 / max_orn, 'm')
@@ -179,7 +183,8 @@ if __name__ == "__main__":
 	f2_ax10.set_ylim([-np.pi/2, 2.])
 	f2_ax10.plot([0, 5], [0, 0], '--k')
 	f2_ax10.set_title('Phase shift')
-
+	f2_ax10.set_xlabel('Frequency (Hz)')
+	f2_ax10.set_ylabel('phase shift (radians)')
 
 	np.savetxt('reverseChirpModel.out', (orn_responses[:, 1], control_pn_responses[:, 1], unc13_pn_responses[:, 1]))
 	# # run each orn_fr through the synaptic model and save the output pn firing rate

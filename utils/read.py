@@ -89,7 +89,7 @@ def read_orn_fr(filename, type='pulses'):
 
 def bin_spikes(x, size, dt):
 	# chop off pre and post
-	sps = (filter(lambda num: (num >= 4 and num < size*dt), x))
+	sps = (filter(lambda num: (num >= 4 and num < 30), x))
 	sps = list(sps)
 
 	# subtract 5 from every element in sps so every spTime is relative to 0 and not 5
@@ -123,3 +123,30 @@ def load_concatenatedlpvm_spike_data(filename):
 
 
 
+def load_spk_times2(stim_, response):
+	'''
+	load stimulus and spike raster with only the relevant stimulus part of the trial
+	:param stim: column data
+	:param response: 3 columns: col, row, data
+	:return:
+	'''
+	stim = np.genfromtxt(stim_, delimiter='\t')
+	nt = len(stim)
+	spikes = io.loadmat(response)
+	# spikes = np.genfromtxt(response, delimiter='\t')
+
+	dt = 0.001
+	start = 4.
+	finish = 30.
+	binfun = lambda t: int(t / dt) - (t == start)
+	stim = stim[range(binfun(start), binfun(finish))]
+
+	spTimes = spikes['spTimes'].squeeze()
+	binned_spikes = np.zeros((len(stim), len(spTimes)))
+
+	for i, tr in enumerate(spTimes):
+		sps = bin_spikes(tr, len(stim), 0.001)
+		binned_spikes[:, i] = sps
+
+	stim = np.tile(stim, (len(spTimes), 1)).T
+	return stim, binned_spikes
