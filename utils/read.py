@@ -172,7 +172,7 @@ def load_behavior2(stim_, response, behavior_par, start):
 
 	resp = resp['flyData'][behavior_par][0][0]
 
-	resp = resp[range(binfun(30 - start), binfun(55.))]
+	resp = resp[range(binfun(30), binfun(55.))]
 
 	stim = np.tile(stim, (resp.shape[1], 1)).T
 
