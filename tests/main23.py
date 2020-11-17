@@ -12,6 +12,7 @@ from sklearn.metrics import r2_score, mean_squared_error
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from utils.read import load_behavior2
 
 def make_dspec(stim, response, dt):
 	# make an Experiment object
@@ -30,7 +31,9 @@ if __name__ == "__main__":
 	# behavior_par = "angvturns"
 	#behavior_par = "vymoves"
 	# load behavior from MATLAB .mat file
-	stim, response = io.load_behavior('../datasets/behavior/control_behavior.mat', 30., 55., behavior_par, 50)
+	stim, response, dt = io.load_behavior2('../datasets/stim.txt', '../datasets/behavior/control_stim_to_behavior.mat', behavior_par)
+
+
 	response = response.mean(axis=1)
 	stim = stim[:, 0]
 

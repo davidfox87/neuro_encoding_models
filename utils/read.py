@@ -140,9 +140,6 @@ def load_spk_times2(stim_, response, dt=0.001):
 	binfun = lambda t: int(t / dt) - (t == start)
 	stim = stim[range(binfun(start), binfun(finish))]
 
-	# downsample otherwise processing will takes AGES!
-	#stim = stim[::5]
-	#dt *= 5
 	spTimes = spikes['spTimes'].squeeze()
 	binned_spikes = np.zeros((len(stim), len(spTimes)))
 
@@ -152,3 +149,31 @@ def load_spk_times2(stim_, response, dt=0.001):
 
 	stim = np.tile(stim, (len(spTimes), 1)).T
 	return stim, binned_spikes, dt
+
+
+
+
+def load_behavior2(stim_, response, behavior_par):
+	'''
+	load stimulus and spike raster with only the relevant stimulus part of the trial
+	:param stim: column data
+	:param response: 3 columns: col, row, data
+	:return:
+	'''
+	stim = np.genfromtxt(stim_, delimiter='\t')
+	resp = io.loadmat(response)
+	dt = 0.001
+
+	start = 4.
+	finish = 30.
+	binfun = lambda t: int(t // dt) - (t == start)
+
+	stim = stim[range(binfun(start), binfun(finish)-1)]
+
+	resp = resp['flyData'][behavior_par][0][0]
+
+	resp = resp[range(binfun(29.), binfun(55.))]
+
+	stim = np.tile(stim, (resp.shape[1], 1)).T
+
+	return stim, resp, dt
