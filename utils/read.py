@@ -153,7 +153,7 @@ def load_spk_times2(stim_, response, dt=0.001):
 
 
 
-def load_behavior2(stim_, response, behavior_par):
+def load_behavior2(stim_, response, behavior_par, start):
 	'''
 	load stimulus and spike raster with only the relevant stimulus part of the trial
 	:param stim: column data
@@ -164,7 +164,7 @@ def load_behavior2(stim_, response, behavior_par):
 	resp = io.loadmat(response)
 	dt = 0.001
 
-	start = 4.
+	# start = 4.
 	finish = 30.
 	binfun = lambda t: int(t // dt) - (t == start)
 
@@ -172,7 +172,7 @@ def load_behavior2(stim_, response, behavior_par):
 
 	resp = resp['flyData'][behavior_par][0][0]
 
-	resp = resp[range(binfun(29.), binfun(55.))]
+	resp = resp[range(binfun(30 - start), binfun(55.))]
 
 	stim = np.tile(stim, (resp.shape[1], 1)).T
 
