@@ -14,8 +14,8 @@ This script fits model parameters, K, h, dc of a
 Poisson Generalized linear model.
 
 """
-def make_bases():
-	dt = 0.001
+def make_bases(dt=0.005):
+	#dt = 0.001
 	fs = 1. / dt
 	nkt = int(2. * fs)
 	stim_basis = RaisedCosine(100, 6, 1, 'stim')
@@ -44,15 +44,15 @@ if __name__ == "__main__":
 	cell_idx = 1
 	cell = "pn" + str(cell_idx)
 	response = '../datasets/spTimesPNControl/{}SpTimes_reverseChirp.mat'.format(cell, '.txt')
-	stim, sps = load_spk_times2('../datasets/stim.txt', response)
+	stim, sps, dt = load_spk_times2('../datasets/stim.txt', response, dt=0.001)
 
 	scaler = MinMaxScaler()
 	stim = scaler.fit_transform(stim)
 
-	stim_basis, spike_basis = make_bases()
+	stim_basis, spike_basis = make_bases(dt=dt)
 	# data should be imported as a matrix of size [nt, trials]
 
-	dt = 0.001
+	#dt = 0.001
 
 	# implement group K-fold Cross-val
 	ntrials = sps.shape[1]
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
 	# regularization
 	nlam = 10
-	lamvals = np.logspace(-1, 10, num=nlam, base=2)
+	lamvals = np.logspace(-5, 5, num=nlam, base=2)
 
 	Imat = np.eye(stim_basis.nbases + spike_basis.nbases + 1)
 	Imat[0, 0] = 0

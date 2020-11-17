@@ -123,7 +123,7 @@ def load_concatenatedlpvm_spike_data(filename):
 
 
 
-def load_spk_times2(stim_, response):
+def load_spk_times2(stim_, response, dt=0.001):
 	'''
 	load stimulus and spike raster with only the relevant stimulus part of the trial
 	:param stim: column data
@@ -135,18 +135,20 @@ def load_spk_times2(stim_, response):
 	spikes = io.loadmat(response)
 	# spikes = np.genfromtxt(response, delimiter='\t')
 
-	dt = 0.001
 	start = 4.
 	finish = 30.
 	binfun = lambda t: int(t / dt) - (t == start)
 	stim = stim[range(binfun(start), binfun(finish))]
 
+	# downsample otherwise processing will takes AGES!
+	stim = stim[::5]
+	dt *= 5
 	spTimes = spikes['spTimes'].squeeze()
 	binned_spikes = np.zeros((len(stim), len(spTimes)))
 
 	for i, tr in enumerate(spTimes):
-		sps = bin_spikes(tr, len(stim), 0.001)
+		sps = bin_spikes(tr, len(stim), dt)
 		binned_spikes[:, i] = sps
 
 	stim = np.tile(stim, (len(spTimes), 1)).T
-	return stim, binned_spikes
+	return stim, binned_spikes, dt

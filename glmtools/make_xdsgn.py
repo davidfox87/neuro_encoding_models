@@ -4,8 +4,7 @@ from scipy import stats, signal
 from basisFactory.bases import Basis, RaisedCosine
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
-
-
+from joblib import Parallel, delayed
 
 class Regressor:
 	def __int__(self, basis_):
@@ -31,19 +30,21 @@ class Regressor:
 		slen = len(s)
 		tb, nkt = bases.shape
 
-		Xstim = np.zeros((slen, nkt))
-		# convolve the stim with each column of the basis matrix
-		for i in range(nkt):
-			Xstim[:, i] = self.sameconv(s, bases[:, i])
+		# Xstim = np.zeros((slen, nkt))
+		# # convolve the stim with each column of the basis matrix
+		# for i in range(nkt):
+		# 	Xstim[:, i] = self.sameconv(s, bases[:, i])
+
+		res = Parallel(n_jobs=4)(delayed(self.sameconv)(s, bi) for bi in bases.T)
+		Xstim = np.array(res).T
 		return Xstim
+
 
 	def sameconv(self, x, f):
 		nt = len(x)
 		f = np.flipud(f)
-		#a = np.concatenate((np.zeros(len(f) - 1), x), axis=None)
 		res = np.convolve(x, f, mode='full')
 		return res[:nt]
-
 
 	def spikefilt(self, sps, bases):
 		# convolve the spike train with each basis function one at a time
@@ -53,15 +54,17 @@ class Regressor:
 		Xsp = np.zeros((spklen, nkt))
 
 		# convolve the spikes with each column of the basis matrix
-		for i in range(nkt):
-			Xsp[:, i] = self.sameconvspike(sps, bases[:, i])
-		return Xsp
+		# for i in range(nkt):
+		# 	Xsp[:, i] = self.sameconvspike(sps, bases[:, i])
+		# return Xsp
+
+		res = Parallel(n_jobs=4)(delayed(self.sameconvspike)(sps, bi) for bi in bases.T)
+		xSp = np.array(res).T
+		return xSp
 
 	def sameconvspike(self, x, f):
 		# (B is flipped as in standard convolution).
 		nt = len(x)
-		#f = np.flipud(f)
-		# x = np.concatenate((np.zeros(len(f) - 1), x), axis=None)
 		res = np.convolve(x, f, mode='full')  # if x is big, then np.convolve will do convolution in the frequency domain
 		return res[:nt]
 
