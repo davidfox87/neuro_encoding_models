@@ -141,8 +141,8 @@ def load_spk_times2(stim_, response, dt=0.001):
 	stim = stim[range(binfun(start), binfun(finish))]
 
 	# downsample otherwise processing will takes AGES!
-	stim = stim[::5]
-	dt *= 5
+	#stim = stim[::5]
+	#dt *= 5
 	spTimes = spikes['spTimes'].squeeze()
 	binned_spikes = np.zeros((len(stim), len(spTimes)))
 
