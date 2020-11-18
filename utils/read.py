@@ -89,13 +89,13 @@ def read_orn_fr(filename, type='pulses'):
 
 def bin_spikes(x, size, dt):
 	# chop off pre and post
-	sps = (filter(lambda num: (num >= 5 and num < 30), x))
+	sps = (filter(lambda num: (num >= 4 and num < 30), x))
 	sps = list(sps)
 
 	# subtract 5 from every element in sps so every spTime is relative to 0 and not 5
-	sps = [list(map(lambda x: x - 5, sps_)) for sps_ in sps]
+	sps = [list(map(lambda x: x - 4, sps_)) for sps_ in sps]
 
-	return np.histogram(sps, np.arange(0.5, size-(5*dt) + 1) * dt - dt)[0]
+	return np.histogram(sps, np.arange(0.5, size-(4*dt) + 1) * dt - dt)[0]
 
 def load_concatenatedlpvm_spike_data(filename):
 	dat = io.loadmat(filename)
@@ -135,7 +135,7 @@ def load_spk_times2(stim_, response, dt=0.001):
 	spikes = io.loadmat(response)
 	# spikes = np.genfromtxt(response, delimiter='\t')
 
-	start = 5.
+	start = 4.
 	finish = 30.
 	binfun = lambda t: int(t / dt) - (t == start)
 	stim = stim[range(binfun(start), binfun(finish))]

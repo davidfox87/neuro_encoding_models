@@ -41,7 +41,7 @@ def make_dspec(stim, response, dt):
 if __name__ == "__main__":
 	# something wrong with cell 6, 8 sometimes the fitting doesn't hone in on the solution...run again
 	# check 4
-	cell_idx = 1
+	cell_idx = 9
 	cell = "pn" + str(cell_idx)
 	response = '../datasets/spTimesPNControl/{}SpTimes_reverseChirp.mat'.format(cell, '.txt')
 	stim, sps, dt = load_spk_times2('../datasets/stim.txt', response, dt=0.001)

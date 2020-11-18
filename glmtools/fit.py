@@ -106,15 +106,9 @@ def neg_log_lik(theta: np.ndarray, ntfilt: int,
 
 	# Compute GLM filter output and conditional intensity
 	nzidx = np.nonzero(y)[0]
-	rate = np.exp(itot)
+	rate = np.exp(itot[nzidx])
 
-	return -(np.dot(y, np.log(rate)) - rate.sum())
-	#Trm0 = np.sum(rate) * 0.001				# non-spike term
-	#Trm1 = -np.sum(itot[nzidx])		# spike term
-	#logli = Trm1 + Trm0
-	#logli = -np.dot(y.T, itot) + np.sum(rate)
-
-	#return logli
+	return -(np.dot(y[nzidx], np.log(rate)) - rate.sum())
 
 
 def neg_log_posterior(prs, negloglifun, Cinv):
