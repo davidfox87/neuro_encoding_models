@@ -106,9 +106,9 @@ def neg_log_lik(theta: np.ndarray, ntfilt: int,
 
 	# Compute GLM filter output and conditional intensity
 	nzidx = np.nonzero(y)[0]
-	rate = np.exp(itot[nzidx])
+	rate = np.exp(itot)
 
-	return -(np.dot(y[nzidx], np.log(rate)) - rate.sum())
+	return -(np.dot(y, np.log(rate)) - rate.sum())
 
 
 def neg_log_posterior(prs, negloglifun, Cinv):
