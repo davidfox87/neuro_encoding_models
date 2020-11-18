@@ -135,7 +135,7 @@ def load_spk_times2(stim_, response, dt=0.001):
 	spikes = io.loadmat(response)
 	# spikes = np.genfromtxt(response, delimiter='\t')
 
-	start = 4.
+	start = 5.
 	finish = 30.
 	binfun = lambda t: int(t / dt) - (t == start)
 	stim = stim[range(binfun(start), binfun(finish))]
