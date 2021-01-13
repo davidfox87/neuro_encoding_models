@@ -2,6 +2,7 @@ import numpy as np
 from glmtools.make_xdsgn import DesignSpec
 from scipy import stats, signal
 import numpy.random as rnd
+from matplotlib import pyplot as plt
 
 class GLM:
 	'''
@@ -27,7 +28,7 @@ class GLM:
 
 		nlfun = lambda x: np.exp(x)
 
-		nbins_per_eval = 1  # Default number of bins to update for each spike
+		nbins_per_eval = 1  	# Default number of bins to update for each spike
 
 		dt = self.dt_			# bin size for simulation
 		slen = len(stim)  		# length of stimulus
@@ -38,7 +39,6 @@ class GLM:
 		nx = len(stim) 			# must have a second dimension for convolve2d to word
 		_, nf = self.k_.shape
 
-		a = np.concatenate((np.zeros(len(self.k_) - 1), stim), axis=None)
 		istm = np.convolve(stim.squeeze(), np.flipud(self.k_.squeeze()), mode='full')
 		istm = istm[:slen] + self.dc_
 
@@ -48,7 +48,7 @@ class GLM:
 
 		sps = np.zeros_like(itot)
 
-		refreshRate = 1000 / dt
+		refreshRate = 1 / dt
 
 
 		# loop through all times

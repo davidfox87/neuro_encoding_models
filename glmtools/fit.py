@@ -103,11 +103,8 @@ def neg_log_lik(theta: np.ndarray, ntfilt: int,
 	else:
 		itot = XStim @ k + dc
 
-
 	# Compute GLM filter output and conditional intensity
-	nzidx = np.nonzero(y)[0]
 	rate = np.exp(itot)
-
 	return -(np.dot(y, np.log(rate)) - rate.sum())
 
 

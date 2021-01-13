@@ -2,6 +2,8 @@ import numpy as np
 from scipy import sparse
 import scipy.io as io
 from sklearn.impute import KNNImputer
+from matplotlib import pyplot as plt
+
 
 def load_spk_times(stim_, response):
 	'''
@@ -105,19 +107,18 @@ def load_concatenatedlpvm_spike_data(filename):
 	binfun = lambda t: int(t / 0.001) - (t == start)
 	lpvm = dat['data']['lpvm'][0][0][0]
 	sptimes = dat['data']['sptimes'][0][0][0]
-	input = []
-	output = []
+
+	# set the size to be equal to the largest trial (plume) so we pad other Vm traces with 0's
+	sps = np.zeros((80000, len(sptimes)))
+	vm = np.ones((80000, len(sptimes)))
 	for i, tr in enumerate(lpvm):
 		tr = tr[range(binfun(start), binfun(len(tr)*dt))]
 
-		input = np.concatenate((input, tr), axis=None)
+		vm[:len(tr), i] = tr.squeeze()
+		vm[len(tr):, i] = tr[-1]*np.ones(80000-len(tr))
+		sps[:len(tr), i] = bin_spikes(sptimes[i], len(tr), dt)
 
-		sps = bin_spikes(sptimes[i], len(tr), dt)
-
-		sps = np.array(sps).T
-		output = np.concatenate((output, sps), axis=None)
-
-	return input, output
+	return vm, sps
 
 
 
