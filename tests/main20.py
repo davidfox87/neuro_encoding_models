@@ -35,7 +35,7 @@ def make_bases(dur, peaks, stim_nbases, stretch, dt=0.02):
 	# stim_basis.makeNonlinearRaisedCosStim(.1, [10, round(nkt/1.7)], stretch, nkt)  # first and last peak positions,
 	stim_basis.makeNonlinearRaisedCosStim(.1, [first_peak / dt, last_peak / dt], stretch, nkt)
 	spike_basis = RaisedCosine(100, 7, 1, 'sphist')
-	spike_basis.makeNonlinearRaisedCosPostSpike(0.1, [.1, 10], 1, 0.01)
+	spike_basis.makeNonlinearRaisedCosPostSpike(0.1, [.1, 10], 1, .01)
 
 	return stim_basis, spike_basis
 
@@ -77,9 +77,9 @@ if __name__ == "__main__":
 
 	# standardize each train and test. Fit to train transform both train and val
 
-	stim_basis, spike_basis = make_bases(0.6, [0.01, 0.4], 10, 10, dt=0.001)
+	stim_basis, spike_basis = make_bases(0.4, [0.005, 0.2], 10, 1, dt=0.001)
 	fig, ax = plt.subplots(1, 2, figsize=[20, 5])
-	ax[0].plot(stim_basis.B)
+	ax[0].plot(np.arange(-len(stim_basis.B), 0)*dt, stim_basis.B)
 	ax[1].plot(spike_basis.B)
 
 
@@ -172,6 +172,94 @@ if __name__ == "__main__":
 
 
 
+
+
+	# do MAP fitting here
+	from joblib import Parallel, delayed
+
+
+	def _fit_and_score(train, test, wmap, parameter):
+		negLTest = []
+		for train, test in zip(train, test):
+			Xtrain, ytrain = train
+			Xtest, ytest = test
+
+			Cinv = parameter * Imat
+
+			wmap_ = mapfit_GLM(wmap, stim_basis.nbases, Xtrain, np.array(ytrain), Cinv, 1);
+
+			negLTest.append(neg_log_func(wmap_, Xtest, ytest))
+
+		return np.mean(negLTest)
+
+
+	# from tqdm import tqdm
+
+
+	def _run_search(evaluate_candidates):
+		"""Search all candidates in param_grid"""
+		evaluate_candidates(lamvals)
+
+
+	parallel = Parallel(n_jobs=10, verbose=10)
+
+	all_out = []
+
+	with parallel:
+
+		def evaluate_candidates(candidate_params):
+			out = parallel(delayed(_fit_and_score)(train=zip(folds_xtrain, folds_ytrain),
+												   test=zip(folds_xtest, folds_ytest),
+												   wmap=wmap,
+												   parameter=param)
+						   for param in candidate_params)
+
+			all_out.extend(out)
+
+	_run_search(evaluate_candidates)
+
+	print(all_out)
+
+	# once we find the minimum lambda, fit on all the training data (not folds)
+	imin = np.argmin(all_out)
+	print("best ridge param is {}".format(lamvals[imin]))
+	print(all_out)
+	plt.plot(all_out, 'o-')
+
+	# fit on entire dataset with this ridge penalty
+	dspec = make_dspec(stim, sps, dt, np.arange(stim.shape[1]))
+	dspec.addRegressorContinuous(basis=stim_basis)
+	dspec.addRegressorSpTrain(basis=spike_basis)
+
+	dm, X, y = dspec.compileDesignMatrixFromTrialIndices()
+	wmap = mapfit_GLM(wmap, stim_basis.nbases, X, y, lamvals[imin] * Imat, 1)
+
+	d = dm.get_regressor_from_output(wmap)
+	dc = wmap[0]
+	k = d['stim'][1]
+	kt = d['stim'][0] * dt
+	h = d['sptrain'][1]
+	ht = d['sptrain'][0] * dt
+
+	figure, ax = plt.subplots(1, 2, figsize=[20, 10])
+	ax[0].plot(kt, k)
+	ax[1].plot(ht, h)
+	ax[0].axhline(0, color=".2", linestyle="--", zorder=1)
+	ax[1].axhline(0, color=".2", linestyle="--", zorder=1)
+	ax[0].set_xlabel('Time before spike(s)')
+	ax[1].set_xlabel('Time after spike(s)')
+	ax[0].set_title('Stimulus Filter')
+	ax[1].set_title('post-spike Filter')
+	ax[1].set_xlim(0.005, 0.4)
+	# ax[0].set_xlim(-2, 0)
+
+
+	# and then test on the test set
+	# 1) get a design matrix for the test set
+	# 2) then get the negative log-likelihood or MSE/R2
+	# neg_log_func(wmap_, Xtest, ytest)
+
+
 	#
 	#
 	# # output GLM parameters: k, h, dc
@@ -184,7 +272,7 @@ if __name__ == "__main__":
 	# # # pickle dictionary using protocol 0
 	# pickle.dump(data, output)
 	# #
-	glm = GLM(0.001, k, h, dc)
+	glm = GLM(dt, k, h, dc)
 	stim_ = scaler_.fit_transform(stim[:, 2].reshape(-1, 1))
 	#
 	nsims = 3
@@ -207,6 +295,9 @@ if __name__ == "__main__":
 	ax[1].eventplot(glm_sptimes.T, linewidth=0.5)
 	ax[2].eventplot(tsp_.T, linewidth=0.5)
 	ax[0].plot(t, stim_)
+	ax[0].set_title('Vm')
+	ax[1].set_title('GLM Spike raster')
+	ax[2].set_title('Actual Spike raster')
 	plt.show()
 	# plt.plot(np.arange(len(tsp)) * dt, get_psth(tsp, 100, 1000))
 	# plt.plot(psth)
