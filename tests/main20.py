@@ -62,29 +62,30 @@ Poisson Generalized linear model.
 if __name__ == "__main__":
 	# something wrong with cell 6, 8 sometimes the fitting doesn't hone in on the solution...run again
 	# check 4
+	dt = 0.001
 	cell_idx = 1
 	stim, sps = load_concatenatedlpvm_spike_data('../datasets/vm_spiking/lpvm_spikes_PN' + str(cell_idx) + '.mat')
-	stim = stim[:, :6]
-	sps = sps[:, :6]
 
-	# normalize stim to between 0 and 1?
-	# scaler = MinMaxScaler()
-	# stim = scaler.fit_transform(stim, [0, 1])
+	inds = np.random.choice(stim.shape[1], 15, replace=False)
+	stim_train = stim[:, inds[:10]]
+	sps_train = sps[:, inds[:10]]
 
-	scaler_ = StandardScaler()
-	stim = scaler_.fit_transform(stim)
-	dt = 0.001
+	stim_test = stim[:, inds[10:]]
+	sps_test = sps[:, inds[10:]]
 
 	# standardize each train and test. Fit to train transform both train and val
+	scaler_ = StandardScaler()
+	stim_train = scaler_.fit_transform(stim_train)
+	stim_test = scaler_.fit_transform(stim_test)
 
-	stim_basis, spike_basis = make_bases(0.4, [0.005, 0.2], 10, 1, dt=0.001)
+	# stim_basis, spike_basis = make_bases(0.4, [0.005, 0.2], 10, 1, dt=0.001)
+	stim_basis, spike_basis = make_bases(0.2, [0.003, 0.1], 10, 1, dt=0.001)
 	fig, ax = plt.subplots(1, 2, figsize=[20, 5])
 	ax[0].plot(np.arange(-len(stim_basis.B), 0)*dt, stim_basis.B)
 	ax[1].plot(spike_basis.B)
 
-
 	# now make the k-fold
-	ntrials = sps.shape[1]
+	ntrials = sps_train.shape[1]
 	inds = np.arange(ntrials)  # trial indices used to make splits
 	np.random.shuffle(inds)
 
@@ -95,7 +96,7 @@ if __name__ == "__main__":
 
 	from sklearn.model_selection import KFold
 
-	kf = KFold(n_splits=3)
+	kf = KFold(n_splits=5)
 	kf.get_n_splits(inds)
 
 	for train_index, test_index in kf.split(inds):
@@ -105,12 +106,12 @@ if __name__ == "__main__":
 		print("TRAIN:", train_index, "TEST:", test_index)
 
 		# use the inds to take a slice of sps and make a train design matrix
-		train_dspec = make_dspec(stim[:, train_index], sps[:, train_index], dt, np.arange(len(train_index)))
+		train_dspec = make_dspec(stim_train[:, train_index], sps_train[:, train_index], dt, np.arange(len(train_index)))
 		train_dspec.addRegressorContinuous(basis=stim_basis)
 		train_dspec.addRegressorSpTrain(basis=spike_basis)
 
 		# use the inds to take a slice of sps and make a test design matrix
-		test_dspec = make_dspec(stim[:, test_index], sps[:, test_index], dt, np.arange(len(test_index)))
+		test_dspec = make_dspec(stim_train[:, test_index], sps_train[:, test_index], dt, np.arange(len(test_index)))
 		test_dspec.addRegressorContinuous(basis=stim_basis)
 		test_dspec.addRegressorSpTrain(basis=spike_basis)
 
@@ -162,8 +163,6 @@ if __name__ == "__main__":
 	ax[1, 0].set_title('membrane potential Filter')
 	ax[1, 1].set_title('post-spike filter Filter')
 
-	# #ax[1, 0].set_xlim([-0.2, 0])
-	# #ax[1, 1].set_xlim([0, 1])
 	figure.suptitle('PN' + str(cell_idx))
 	plt.tight_layout()
 
@@ -227,7 +226,7 @@ if __name__ == "__main__":
 	plt.plot(all_out, 'o-')
 
 	# fit on entire dataset with this ridge penalty
-	dspec = make_dspec(stim, sps, dt, np.arange(stim.shape[1]))
+	dspec = make_dspec(stim_train, sps_train, dt, np.arange(stim_train.shape[1]))
 	dspec.addRegressorContinuous(basis=stim_basis)
 	dspec.addRegressorSpTrain(basis=spike_basis)
 
@@ -250,8 +249,8 @@ if __name__ == "__main__":
 	ax[1].set_xlabel('Time after spike(s)')
 	ax[0].set_title('Stimulus Filter')
 	ax[1].set_title('post-spike Filter')
-	ax[1].set_xlim(0.005, 0.4)
-	# ax[0].set_xlim(-2, 0)
+	ax[1].set_xlim(0.005, 0.2)
+	ax[0].set_xlim(-0.1, 0)
 
 
 	# and then test on the test set
@@ -272,8 +271,10 @@ if __name__ == "__main__":
 	# # # pickle dictionary using protocol 0
 	# pickle.dump(data, output)
 	# #
+
+	stim_idx = 25
 	glm = GLM(dt, k, h, dc)
-	stim_ = scaler_.fit_transform(stim[:, 2].reshape(-1, 1))
+	stim_ = scaler_.fit_transform(stim[:, stim_idx].reshape(-1, 1))
 	#
 	nsims = 3
 	glm_sims = np.zeros((sps.shape[0], nsims))
@@ -286,7 +287,7 @@ if __name__ == "__main__":
 
 
 
-	tsp_ = sps[:, 0] * np.arange(len(sps)) * dt
+	tsp_ = sps[:, stim_idx] * np.arange(len(sps)) * dt
 	# #colors1 = ['C{}'.format(1) for i in range(3)]
 	#
 	fs = 1/dt

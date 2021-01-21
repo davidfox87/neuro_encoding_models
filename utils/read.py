@@ -91,7 +91,7 @@ def read_orn_fr(filename, type='pulses'):
 
 def bin_spikes(x, size, dt):
 	# chop off pre and post
-	sps = (filter(lambda num: (num >= 4 and num < 30), x))
+	sps = (filter(lambda num: (num >= 4), x))
 	sps = list(sps)
 
 	# subtract 5 from every element in sps so every spTime is relative to 0 and not 5
@@ -113,7 +113,7 @@ def load_concatenatedlpvm_spike_data(filename):
 	vm = np.ones((int(80/dt), len(sptimes)))
 	for i, tr in enumerate(lpvm):
 		tr = tr[range(binfun(start), binfun(len(tr)*dt))]
-		tr = tr.squeeze() # downsample
+		tr = tr.squeeze()  # downsample
 		vm[:len(tr), i] = tr
 		vm[len(tr):, i] = tr[-1]*np.ones(int(80/dt)-len(tr))
 		sps[:len(tr), i] = bin_spikes(sptimes[i], len(tr), dt)
