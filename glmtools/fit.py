@@ -177,17 +177,23 @@ def x_proj(wts, x, y, ntstim):
 
 
 
+# def sameconv(x, f):
+# 	slen = len(x)
+# 	x = np.convolve(x.squeeze(), np.flipud(f.squeeze()), mode='full')
+# 	return x[:slen]
+#
+#
+# 	a = np.concatenate((np.zeros(nf - 1), x), axis=None)
+# 	b = np.rot90(f, k=2)
+# 	res = signal.convolve2d(np.asarray([a]), b, mode='valid')
+# 	return res.squeeze()
+
+
 def sameconv(x, f):
-	slen = len(x)
-	x = np.convolve(x.squeeze(), np.flipud(f.squeeze()), mode='full')
-	return x[:slen]
-
-
-	a = np.concatenate((np.zeros(nf - 1), x), axis=None)
-	b = np.rot90(f, k=2)
-	res = signal.convolve2d(np.asarray([a]), b, mode='valid')
-	return res.squeeze()
-
+	nt = len(x)
+	f = np.flipud(f)
+	res = np.convolve(x, f, mode='full')
+	return res[:nt]
 
 def fit_nlin_hist1d(stim, response, filt, dt, nfbins):
 	"""
@@ -222,6 +228,27 @@ def fit_nlin_hist1d(stim, response, filt, dt, nfbins):
 
 	xx = np.linspace(bin_edges[0], bin_edges[-1], 100)
 
-	#plt.plot(xx, fnlin(xx), linewidth=2)
-
 	return xx, fnlin, rawfilteroutput
+
+
+def fit_mean_nlfn(x, y, nbins=20):
+
+	# bin the x, which is the mean filtered stim across training trials
+	counts, bin_edges = np.histogram(x, bins=20)
+
+	# Return the indices of the bins to which each value in input array belongs.
+	inds = np.digitize(x, bin_edges)
+
+	# use the centers of the bins
+	fx = 0.5 * (bin_edges[1:] + bin_edges[:-1])
+
+	fy = np.zeros(20)
+	# for each bin, average across the actual responses
+	for i in range(20):
+		fy[i] = np.nanmean(y[inds == i + 1])
+
+	fnlin = lambda x: np.interp(x, fx, fy)
+
+	xx = np.linspace(bin_edges[0], bin_edges[-1], 100)
+
+	return xx, fnlin

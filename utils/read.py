@@ -121,7 +121,38 @@ def load_concatenatedlpvm_spike_data(filename):
 	return vm, sps
 
 
+def load_ankita_data(filename):
+	# load the mat file
+	dat = io.loadmat(filename)
 
+	# extract the odor stim part
+	stims = dat['ConstantAir_glom1']['odor'][0].squeeze()
+
+	# extract the response part
+	responses = dat['ConstantAir_glom1']['odor'][0].squeeze()
+
+	# set the size to be equal to the largest trial so we pad other Vm traces with 0's
+	# largest trial has 1676 samples
+
+	tmp = []
+	tmp2 = []
+	for stim_responses in zip(stims, responses):
+		for trial in stim_responses:
+			stim = trial[0]
+			response = trial[1]
+
+			# make sure to pad with zeros to make 1676 samples
+			currstim = stim[0].squeeze()
+			paddedstim = np.hstack((currstim, currstim[-1]*np.ones(1676-len(currstim))))
+			tmp.append(paddedstim)
+
+			currresponse = response[0].squeeze()
+			paddedresponse = np.hstack((currresponse, currresponse[-1]*np.ones(1676 - len(currresponse))))
+			tmp2.append(paddedresponse)
+	stims = np.array(tmp)
+	responses = np.array(tmp2)
+
+	return stims.T, responses.T
 
 
 def load_spk_times2(stim_, response, dt=0.001):
