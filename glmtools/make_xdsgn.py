@@ -202,7 +202,7 @@ class DesignMatrix:
 		M = np.zeros((self.n_bins(), 0))  # initialize a matrix with nbins rows and intially 0 columns
 		for r in self._regressors:
 
-			Mr = r.matrix(params=params, n_bins=self.n_bins(), _times=self._times, _bintimes=self._bintimes, \
+			Mr = r.matrix(params=params, n_bins=self.n_bins(), _times=self._times, _bintimes=self._bintimes,
 						  trial_end=trial_end)
 
 			M = np.concatenate([M, Mr], axis=1)
@@ -231,11 +231,13 @@ class DesignMatrix:
 					x = np.asarray(range(-len(y), 0))
 				else:
 					x = np.asarray(range(0, len(y)))
-				d[name] = (x, y)
+				# d[name] = (x, y)
 				start_index += r.edim
 			else:
 				y = output[start_index:start_index + r.bins_before]
 				x = np.asarray(range(-r.bins_before, r.bins_after)) * self._dt
+
+			d[name] = (x, y)
 
 		return d
 
@@ -307,12 +309,6 @@ class DesignSpec:
 		self.regressors = []
 
 	def addRegressorSpTrain(self, basis=None):
-		# first make basis to represent the spike history filter
-		# basis = RaisedCosine(100, 5, 1, 'sphist')
-		#
-		# basis.makeNonlinearRaisedCosPostSpike(self.expt.dtSp, [.001, 1], .5)
-		# r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
-		# self.regressors.append(r)
 		if basis:
 			r = RegressorSphist(self.expt.regressortype['sptrain'], self._ntsphist, basis=basis)
 		else:
@@ -339,8 +335,10 @@ class DesignSpec:
 		for k in self.regressors:
 			dm.add_regressor(k)
 
-		Xfull = dm.empty_matrix()
-		Yfull = np.asarray([])
+		#Xfull = dm.empty_matrix()
+		Xfull = np.zeros((dm.n_bins()*expt.stim.shape[1], self._ntfilt))
+		#Yfull = np.asarray([])
+		Yfull = np.zeros((dm.n_bins()*expt.stim.shape[1]))
 
 		for tr in tqdm(self._trialinds):
 			# nT = np.ceil(expt.duration / expt.dtSp)
@@ -362,8 +360,13 @@ class DesignSpec:
 
 			X = dm.build_matrix(d)
 
-			Xfull = np.concatenate([Xfull, X], axis=0)
-			Yfull = np.concatenate([Yfull, self.expt.response[:, tr]])
+			Xfull[tr*len(X):tr*len(X) + len(X), :] = X
+			Yfull[tr*len(X):tr*len(X) + len(X)] = self.expt.response[:, tr]
+
+			# this is not memory efficient...to resize the array many times
+			# can we preallocate
+			# Xfull = np.concatenate([Xfull, X], axis=0)
+			# Yfull = np.concatenate([Yfull, self.expt.response[:, tr]])
 
 
 
